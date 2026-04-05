@@ -1,0 +1,196 @@
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================
+-- ADMIN / STAFF USERS
+-- ============================================
+CREATE TABLE IF NOT EXISTS admins (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  username VARCHAR(50) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  full_name VARCHAR(100) NOT NULL,
+  role VARCHAR(20) DEFAULT 'dentist' CHECK (role IN ('admin', 'dentist', 'hygienist', 'receptionist')),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_login TIMESTAMPTZ
+);
+
+-- ============================================
+-- PATIENTS
+-- ============================================
+CREATE TABLE IF NOT EXISTS patients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  record_date DATE DEFAULT CURRENT_DATE,
+  last_name VARCHAR(100) NOT NULL,
+  first_name VARCHAR(100) NOT NULL,
+  middle_name VARCHAR(100),
+  date_of_birth DATE NOT NULL,
+  sex VARCHAR(10) CHECK (sex IN ('male', 'female', 'other')),
+  height VARCHAR(20),
+  weight VARCHAR(20),
+  occupation VARCHAR(100),
+  marital_status VARCHAR(20) CHECK (marital_status IN ('single', 'married', 'widowed', 'divorced')),
+  spouse_name VARCHAR(100),
+  address TEXT,
+  zip_code VARCHAR(10),
+  phone VARCHAR(20),
+  business_address TEXT,
+  business_phone VARCHAR(20),
+  email VARCHAR(255),
+  referred_by VARCHAR(100),
+  preferred_appointment_time VARCHAR(100),
+  insurance_provider VARCHAR(100),
+  insurance_id VARCHAR(50),
+  notes TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES admins(id)
+);
+
+-- ============================================
+-- MEDICAL HISTORY
+-- ============================================
+CREATE TABLE IF NOT EXISTS medical_history (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  patient_id UUID UNIQUE REFERENCES patients(id) ON DELETE CASCADE,
+  general_health VARCHAR(20) CHECK (general_health IN ('good', 'fair', 'poor', 'unknown')),
+  physician_name_address TEXT,
+  last_physical_exam TEXT,
+  taking_medication BOOLEAN DEFAULT false,
+  medication_details TEXT,
+  heart_disease BOOLEAN DEFAULT false,
+  heart_murmur BOOLEAN DEFAULT false,
+  rheumatic_fever BOOLEAN DEFAULT false,
+  jaundice BOOLEAN DEFAULT false,
+  abnormal_blood_pressure BOOLEAN DEFAULT false,
+  asthma_hay_fever BOOLEAN DEFAULT false,
+  ulcers BOOLEAN DEFAULT false,
+  sinus_trouble BOOLEAN DEFAULT false,
+  tuberculosis_lung_disease BOOLEAN DEFAULT false,
+  cough BOOLEAN DEFAULT false,
+  diabetes BOOLEAN DEFAULT false,
+  hepatitis BOOLEAN DEFAULT false,
+  epilepsy BOOLEAN DEFAULT false,
+  arthritis BOOLEAN DEFAULT false,
+  anemia BOOLEAN DEFAULT false,
+  stroke BOOLEAN DEFAULT false,
+  congenital_heart_lesions BOOLEAN DEFAULT false,
+  glaucoma BOOLEAN DEFAULT false,
+  treated_with_xray BOOLEAN DEFAULT false,
+  allergic_penicillin BOOLEAN DEFAULT false,
+  allergic_codeine BOOLEAN DEFAULT false,
+  allergic_local_anesthetic BOOLEAN DEFAULT false,
+  allergic_other_medications BOOLEAN DEFAULT false,
+  allergic_other_details TEXT,
+  prolonged_bleeding BOOLEAN DEFAULT false,
+  fainting_spells BOOLEAN DEFAULT false,
+  excessive_urination_thirst BOOLEAN DEFAULT false,
+  is_pregnant BOOLEAN DEFAULT false,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_by UUID REFERENCES admins(id)
+);
+
+-- ============================================
+-- DENTAL CHART
+-- ============================================
+CREATE TABLE IF NOT EXISTS dental_chart (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+  tooth_number INTEGER NOT NULL CHECK (tooth_number BETWEEN 1 AND 32),
+  status VARCHAR(20) DEFAULT 'healthy' CHECK (status IN (
+    'healthy', 'cavity', 'filled', 'crown', 'missing',
+    'root_canal', 'extracted', 'implant', 'bridge', 'veneer'
+  )),
+  surface VARCHAR(50),
+  notes TEXT,
+  last_updated TIMESTAMPTZ DEFAULT NOW(),
+  updated_by UUID REFERENCES admins(id),
+  UNIQUE(patient_id, tooth_number)
+);
+
+-- ============================================
+-- VISITS
+-- ============================================
+CREATE TABLE IF NOT EXISTS visits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+  dentist_id UUID REFERENCES admins(id),
+  visit_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  visit_type VARCHAR(50) NOT NULL CHECK (visit_type IN (
+    'checkup', 'cleaning', 'filling', 'extraction', 'root_canal',
+    'crown', 'emergency', 'consultation', 'whitening', 'braces',
+    'dentures', 'implant', 'other'
+  )),
+  chief_complaint TEXT,
+  diagnosis TEXT,
+  treatment_performed TEXT NOT NULL,
+  teeth_treated INTEGER[],
+  prescriptions TEXT,
+  next_appointment DATE,
+  cost DECIMAL(10,2),
+  payment_status VARCHAR(20) DEFAULT 'pending' CHECK (payment_status IN (
+    'pending', 'paid', 'insurance', 'partial'
+  )),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
+-- ORTHODONTIC CASES
+-- ============================================
+CREATE TABLE IF NOT EXISTS orthodontic_cases (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  patient_id UUID UNIQUE REFERENCES patients(id) ON DELETE CASCADE,
+  dentist_id UUID REFERENCES admins(id),
+  bracket_type VARCHAR(50) DEFAULT 'metal'
+    CHECK (bracket_type IN ('metal','ceramic','lingual','clear_aligner','other')),
+  start_date DATE,
+  estimated_end_date DATE,
+  actual_end_date DATE,
+  total_cost DECIMAL(10,2) DEFAULT 0,
+  downpayment DECIMAL(10,2) DEFAULT 0,
+  total_paid DECIMAL(10,2) DEFAULT 0,
+  status VARCHAR(20) DEFAULT 'active'
+    CHECK (status IN ('active','completed','discontinued')),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES admins(id)
+);
+
+-- ============================================
+-- ORTHODONTIC ADJUSTMENTS
+-- ============================================
+CREATE TABLE IF NOT EXISTS orthodontic_adjustments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  case_id UUID REFERENCES orthodontic_cases(id) ON DELETE CASCADE,
+  patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+  adjustment_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  notes TEXT,
+  next_adjustment_date DATE,
+  performed_by UUID REFERENCES admins(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
+-- CLINIC SETTINGS
+-- ============================================
+CREATE TABLE IF NOT EXISTS clinic_settings (
+  id SERIAL PRIMARY KEY,
+  clinic_name VARCHAR(200) DEFAULT 'Dental Clinic',
+  address TEXT,
+  phone VARCHAR(50),
+  email VARCHAR(255),
+  website VARCHAR(255),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
+-- INDEXES
+-- ============================================
+CREATE INDEX IF NOT EXISTS idx_patients_name ON patients(last_name, first_name);
+CREATE INDEX IF NOT EXISTS idx_dental_chart_patient ON dental_chart(patient_id);
+CREATE INDEX IF NOT EXISTS idx_visits_patient ON visits(patient_id);
+CREATE INDEX IF NOT EXISTS idx_visits_date ON visits(visit_date);

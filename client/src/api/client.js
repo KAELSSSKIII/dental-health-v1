@@ -1,0 +1,28 @@
+import axios from 'axios';
+
+const client = axios.create({
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+    headers: { 'Content-Type': 'application/json' },
+});
+
+// Attach JWT to every request
+client.interceptors.request.use((config) => {
+    const token = localStorage.getItem('dental_token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+
+// Handle 401 globally (skip login endpoint — its errors are handled by the form)
+client.interceptors.response.use(
+    (res) => res,
+    (err) => {
+        const isLoginEndpoint = err.config?.url?.includes('/auth/login');
+        if (err.response?.status === 401 && !isLoginEndpoint) {
+            localStorage.removeItem('dental_token');
+            window.location.href = '/login';
+        }
+        return Promise.reject(err);
+    }
+);
+
+export default client;
