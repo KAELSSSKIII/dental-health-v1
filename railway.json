@@ -1,9 +1,12 @@
 {
-  "$schema": "https://schema.railpack.com",
+  "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "installCmd": "if [ -d server ]; then cd server; fi; npm ci"
+    "builder": "RAILPACK",
+    "buildCommand": "if [ -f server/package.json ]; then npm ci --prefix server; else npm ci; fi"
   },
   "deploy": {
-    "startCommand": "if [ -d server ]; then cd server; fi; npm start"
+    "startCommand": "if [ -f server/package.json ]; then npm start --prefix server; else npm start; fi",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
   }
 }
