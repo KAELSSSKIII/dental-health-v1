@@ -1,9 +1,9 @@
 {
   "$schema": "https://schema.railpack.com",
   "build": {
-    "installCmd": "cd server && npm ci"
+    "installCmd": "if [ -d server ]; then cd server; fi; npm ci"
   },
   "deploy": {
-    "startCommand": "cd server && npm start"
+    "startCommand": "if [ -d server ]; then cd server; fi; npm start"
   }
 }
