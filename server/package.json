@@ -4,8 +4,9 @@
     "description": "Dental Clinic API Server",
     "main": "index.js",
     "scripts": {
-        "start": "node index.js",
+        "start": "npm run migrate && node index.js",
         "dev": "npx nodemon index.js",
+        "migrate": "node db/migrate.js",
         "db:setup": "node db/seed.js"
     },
     "dependencies": {
