@@ -97,14 +97,30 @@ router.put('/:caseId', verifyToken, async (req, res) => {
     }
 });
 
+// Helper: recalculate total_paid on the case as downpayment + SUM of adjustment payments
+async function recalcTotalPaid(client, caseId) {
+    await client.query(
+        `UPDATE orthodontic_cases
+         SET total_paid = downpayment + COALESCE(
+               (SELECT SUM(amount_paid) FROM orthodontic_adjustments WHERE case_id = $1), 0
+             ),
+             updated_at = NOW()
+         WHERE id = $1`,
+        [caseId]
+    );
+}
+
 // POST /api/patients/:id/orthodontics/:caseId/adjustments
 router.post('/:caseId/adjustments', verifyToken, async (req, res) => {
-    const { adjustment_date, notes, next_adjustment_date } = req.body;
+    const { adjustment_date, notes, next_adjustment_date, amount_paid, payment_notes } = req.body;
+    const db = await pool.connect();
     try {
-        const result = await pool.query(
+        await db.query('BEGIN');
+        const result = await db.query(
             `INSERT INTO orthodontic_adjustments
-               (case_id, patient_id, adjustment_date, notes, next_adjustment_date, performed_by)
-             VALUES ($1,$2,$3,$4,$5,$6)
+               (case_id, patient_id, adjustment_date, notes, next_adjustment_date,
+                performed_by, amount_paid, payment_notes)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
              RETURNING *`,
             [
                 req.params.caseId,
@@ -113,8 +129,12 @@ router.post('/:caseId/adjustments', verifyToken, async (req, res) => {
                 notes || null,
                 next_adjustment_date || null,
                 req.admin.id,
+                parseFloat(amount_paid) || 0,
+                payment_notes || null,
             ]
         );
+        await recalcTotalPaid(db, req.params.caseId);
+        await db.query('COMMIT');
         const full = await pool.query(
             `SELECT oa.*, a.full_name AS performed_by_name
              FROM orthodontic_adjustments oa
@@ -124,28 +144,41 @@ router.post('/:caseId/adjustments', verifyToken, async (req, res) => {
         );
         res.status(201).json(full.rows[0]);
     } catch (err) {
+        await db.query('ROLLBACK');
         console.error(err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        db.release();
     }
 });
 
 // PUT /api/patients/:id/orthodontics/:caseId/adjustments/:adjId
 router.put('/:caseId/adjustments/:adjId', verifyToken, async (req, res) => {
-    const { adjustment_date, notes, next_adjustment_date } = req.body;
+    const { adjustment_date, notes, next_adjustment_date, amount_paid, payment_notes } = req.body;
+    const db = await pool.connect();
     try {
-        const result = await pool.query(
+        await db.query('BEGIN');
+        const result = await db.query(
             `UPDATE orthodontic_adjustments SET
-               adjustment_date=$1, notes=$2, next_adjustment_date=$3
-             WHERE id=$4
+               adjustment_date=$1, notes=$2, next_adjustment_date=$3,
+               amount_paid=$4, payment_notes=$5
+             WHERE id=$6
              RETURNING *`,
             [
                 adjustment_date,
                 notes || null,
                 next_adjustment_date || null,
+                parseFloat(amount_paid) || 0,
+                payment_notes || null,
                 req.params.adjId,
             ]
         );
-        if (result.rows.length === 0) return res.status(404).json({ error: 'Adjustment not found' });
+        if (result.rows.length === 0) {
+            await db.query('ROLLBACK');
+            return res.status(404).json({ error: 'Adjustment not found' });
+        }
+        await recalcTotalPaid(db, req.params.caseId);
+        await db.query('COMMIT');
         const full = await pool.query(
             `SELECT oa.*, a.full_name AS performed_by_name
              FROM orthodontic_adjustments oa
@@ -155,22 +188,36 @@ router.put('/:caseId/adjustments/:adjId', verifyToken, async (req, res) => {
         );
         res.json(full.rows[0]);
     } catch (err) {
+        await db.query('ROLLBACK');
         console.error(err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        db.release();
     }
 });
 
 // DELETE /api/patients/:id/orthodontics/:caseId/adjustments/:adjId
 router.delete('/:caseId/adjustments/:adjId', verifyToken, async (req, res) => {
+    const db = await pool.connect();
     try {
-        const result = await pool.query(
+        await db.query('BEGIN');
+        const result = await db.query(
             'DELETE FROM orthodontic_adjustments WHERE id=$1 RETURNING id',
             [req.params.adjId]
         );
-        if (result.rows.length === 0) return res.status(404).json({ error: 'Adjustment not found' });
+        if (result.rows.length === 0) {
+            await db.query('ROLLBACK');
+            return res.status(404).json({ error: 'Adjustment not found' });
+        }
+        await recalcTotalPaid(db, req.params.caseId);
+        await db.query('COMMIT');
         res.json({ message: 'Adjustment deleted' });
     } catch (err) {
+        await db.query('ROLLBACK');
+        console.error(err);
         res.status(500).json({ error: 'Server error' });
+    } finally {
+        db.release();
     }
 });
 

@@ -3,7 +3,7 @@ import Modal from '../../components/Modal';
 import { TOOTH_STATUSES, TOOTH_NAMES } from '../../utils/constants';
 
 export default function ToothStatusModal({ tooth, onSave, onClose }) {
-    const { number, tooth: toothData } = tooth;
+    const { number, tooth: toothData, isExtra } = tooth;
     const [status, setStatus] = useState(toothData?.status || 'healthy');
     const [notes, setNotes] = useState(toothData?.notes || '');
 
@@ -11,11 +11,19 @@ export default function ToothStatusModal({ tooth, onSave, onClose }) {
         onSave(number, { status, notes: notes || null });
     };
 
+    const title = isExtra
+        ? `${toothData?.extra_label || 'Extra Tooth'} (#${number})`
+        : `Tooth #${number}`;
+
+    const subtitle = isExtra
+        ? 'Supernumerary tooth'
+        : TOOTH_NAMES[number];
+
     return (
         <Modal
             isOpen={true}
             onClose={onClose}
-            title={`Tooth #${number}`}
+            title={title}
             size="sm"
             footer={
                 <>
@@ -25,7 +33,7 @@ export default function ToothStatusModal({ tooth, onSave, onClose }) {
             }
         >
             <div className="space-y-4">
-                <p className="text-sm text-text-secondary">{TOOTH_NAMES[number]}</p>
+                <p className="text-sm text-text-secondary">{subtitle}</p>
                 <div>
                     <label className="form-label">Status</label>
                     <div className="grid grid-cols-2 gap-2 mt-1">

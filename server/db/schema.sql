@@ -43,11 +43,15 @@ CREATE TABLE IF NOT EXISTS patients (
   insurance_provider VARCHAR(100),
   insurance_id VARCHAR(50),
   notes TEXT,
+  profile_photo TEXT,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_by UUID REFERENCES admins(id)
 );
+
+-- Add profile_photo to existing patients tables (safe to run multiple times)
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS profile_photo TEXT;
 
 -- ============================================
 -- MEDICAL HISTORY
@@ -98,17 +102,29 @@ CREATE TABLE IF NOT EXISTS medical_history (
 CREATE TABLE IF NOT EXISTS dental_chart (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
-  tooth_number INTEGER NOT NULL CHECK (tooth_number BETWEEN 1 AND 32),
+  tooth_number INTEGER NOT NULL CHECK (tooth_number >= 1),
   status VARCHAR(20) DEFAULT 'healthy' CHECK (status IN (
     'healthy', 'cavity', 'filled', 'crown', 'missing',
     'root_canal', 'extracted', 'implant', 'bridge', 'veneer'
   )),
   surface VARCHAR(50),
   notes TEXT,
+  is_extra BOOLEAN DEFAULT false,
+  extra_label VARCHAR(50),
   last_updated TIMESTAMPTZ DEFAULT NOW(),
   updated_by UUID REFERENCES admins(id),
   UNIQUE(patient_id, tooth_number)
 );
+
+-- Migrate existing dental_chart tables
+DO $$
+BEGIN
+    -- Drop old check constraint that limits tooth_number to 1-32
+    ALTER TABLE dental_chart DROP CONSTRAINT IF EXISTS dental_chart_tooth_number_check;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+ALTER TABLE dental_chart ADD COLUMN IF NOT EXISTS is_extra BOOLEAN DEFAULT false;
+ALTER TABLE dental_chart ADD COLUMN IF NOT EXISTS extra_label VARCHAR(50);
 
 -- ============================================
 -- VISITS
@@ -171,8 +187,14 @@ CREATE TABLE IF NOT EXISTS orthodontic_adjustments (
   notes TEXT,
   next_adjustment_date DATE,
   performed_by UUID REFERENCES admins(id),
+  amount_paid DECIMAL(10,2) DEFAULT 0,
+  payment_notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add payment columns to existing orthodontic_adjustments tables
+ALTER TABLE orthodontic_adjustments ADD COLUMN IF NOT EXISTS amount_paid DECIMAL(10,2) DEFAULT 0;
+ALTER TABLE orthodontic_adjustments ADD COLUMN IF NOT EXISTS payment_notes TEXT;
 
 -- ============================================
 -- CLINIC SETTINGS
@@ -188,9 +210,25 @@ CREATE TABLE IF NOT EXISTS clinic_settings (
 );
 
 -- ============================================
+-- PATIENT PHOTOS
+-- ============================================
+CREATE TABLE IF NOT EXISTS patient_photos (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  photo_data TEXT NOT NULL,
+  photo_type VARCHAR(20) NOT NULL DEFAULT 'other'
+    CHECK (photo_type IN ('before','after','xray','intraoral','panoramic','other')),
+  label VARCHAR(100),
+  notes TEXT,
+  uploaded_by UUID REFERENCES admins(id),
+  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================
 -- INDEXES
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_patients_name ON patients(last_name, first_name);
 CREATE INDEX IF NOT EXISTS idx_dental_chart_patient ON dental_chart(patient_id);
 CREATE INDEX IF NOT EXISTS idx_visits_patient ON visits(patient_id);
 CREATE INDEX IF NOT EXISTS idx_visits_date ON visits(visit_date);
+CREATE INDEX IF NOT EXISTS idx_patient_photos_patient ON patient_photos(patient_id);

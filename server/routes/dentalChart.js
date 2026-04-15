@@ -85,21 +85,75 @@ router.put('/bulk', verifyToken, async (req, res) => {
 // PUT /api/patients/:id/dental-chart/:toothNumber
 router.put('/:toothNumber', verifyToken, async (req, res) => {
     const { id, toothNumber } = req.params;
-    const { status, surface, notes } = req.body;
+    const { status, surface, notes, extra_label } = req.body;
 
     try {
         const result = await pool.query(`
-      INSERT INTO dental_chart (patient_id, tooth_number, status, surface, notes, updated_by, last_updated)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      INSERT INTO dental_chart (patient_id, tooth_number, status, surface, notes, extra_label, updated_by, last_updated)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
       ON CONFLICT (patient_id, tooth_number) DO UPDATE SET
         status = EXCLUDED.status,
         surface = EXCLUDED.surface,
         notes = EXCLUDED.notes,
+        extra_label = COALESCE(EXCLUDED.extra_label, dental_chart.extra_label),
         updated_by = EXCLUDED.updated_by,
         last_updated = NOW()
       RETURNING *
-    `, [id, parseInt(toothNumber), status || 'healthy', surface || null, notes || null, req.admin.id]);
+    `, [id, parseInt(toothNumber), status || 'healthy', surface || null, notes || null, extra_label || null, req.admin.id]);
         res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// POST /api/patients/:id/dental-chart/extra — add a supernumerary tooth
+router.post('/extra', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const { extra_label } = req.body;
+
+    if (!extra_label || !extra_label.trim()) {
+        return res.status(400).json({ error: 'extra_label is required' });
+    }
+
+    try {
+        // Find next available tooth number >= 33
+        const maxRes = await pool.query(
+            'SELECT COALESCE(MAX(tooth_number), 32) AS max_num FROM dental_chart WHERE patient_id = $1 AND tooth_number >= 33',
+            [id]
+        );
+        const nextNum = parseInt(maxRes.rows[0].max_num) + 1;
+
+        const result = await pool.query(`
+            INSERT INTO dental_chart
+                (patient_id, tooth_number, status, is_extra, extra_label, updated_by, last_updated)
+            VALUES ($1, $2, 'healthy', true, $3, $4, NOW())
+            RETURNING *
+        `, [id, nextNum, extra_label.trim(), req.admin.id]);
+
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// DELETE /api/patients/:id/dental-chart/:toothNumber — only allowed for extra teeth
+router.delete('/:toothNumber', verifyToken, async (req, res) => {
+    const { id, toothNumber } = req.params;
+    const num = parseInt(toothNumber);
+
+    if (num <= 32) {
+        return res.status(400).json({ error: 'Standard teeth cannot be deleted, only their status can be changed' });
+    }
+
+    try {
+        const result = await pool.query(
+            'DELETE FROM dental_chart WHERE patient_id = $1 AND tooth_number = $2 AND is_extra = true RETURNING id',
+            [id, num]
+        );
+        if (result.rowCount === 0) return res.status(404).json({ error: 'Extra tooth not found' });
+        res.json({ message: 'Extra tooth removed' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });

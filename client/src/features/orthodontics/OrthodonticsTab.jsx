@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Pencil, Trash2, RefreshCw, DollarSign, Calendar, Smile } from 'lucide-react';
+import { Plus, Pencil, Trash2, RefreshCw, DollarSign, Calendar, Smile, Receipt } from 'lucide-react';
 import client from '../../api/client';
 import { useToast } from '../../components/Toast';
 import { formatDate, formatCurrency } from '../../utils/helpers';
@@ -165,13 +165,15 @@ function PaymentModal({ patientId, orthoCase, onSave, onClose }) {
 }
 
 // ── Adjustment Modal ──────────────────────────────────────────────────────────
-function AdjustmentModal({ patientId, caseId, adjustment, onSave, onClose }) {
+function AdjustmentModal({ patientId, caseId, adjustment, orthoCase, onSave, onClose }) {
     const toast = useToast();
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({
         adjustment_date: adjustment?.adjustment_date ? adjustment.adjustment_date.slice(0, 10) : new Date().toISOString().slice(0, 10),
         notes: adjustment?.notes || '',
         next_adjustment_date: adjustment?.next_adjustment_date ? adjustment.next_adjustment_date.slice(0, 10) : '',
+        amount_paid: adjustment?.amount_paid ?? '',
+        payment_notes: adjustment?.payment_notes || '',
     });
 
     const set = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }));
@@ -194,6 +196,10 @@ function AdjustmentModal({ patientId, caseId, adjustment, onSave, onClose }) {
         }
     };
 
+    const remaining = orthoCase
+        ? Math.max(0, (parseFloat(orthoCase.total_cost) || 0) - (parseFloat(orthoCase.total_paid) || 0))
+        : 0;
+
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -207,9 +213,43 @@ function AdjustmentModal({ patientId, caseId, adjustment, onSave, onClose }) {
                 </div>
             </div>
             <div>
-                <label className="form-label">Notes</label>
-                <textarea className="form-textarea" rows={3} value={form.notes} onChange={set('notes')} placeholder="Wire change, progress observations, patient concerns..." />
+                <label className="form-label">Clinical Notes</label>
+                <textarea className="form-textarea" rows={2} value={form.notes} onChange={set('notes')} placeholder="Wire change, progress observations, patient concerns..." />
             </div>
+
+            {/* Payment section */}
+            <div className="border-t border-border pt-4 space-y-3">
+                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5" /> Payment for this visit
+                </p>
+                {orthoCase && remaining > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
+                        Outstanding balance: <span className="font-semibold">{formatCurrency(remaining)}</span>
+                    </div>
+                )}
+                <div>
+                    <label className="form-label">Amount Paid (PHP)</label>
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="form-input"
+                        placeholder="0.00"
+                        value={form.amount_paid}
+                        onChange={set('amount_paid')}
+                    />
+                </div>
+                <div>
+                    <label className="form-label">Payment Notes <span className="text-text-secondary font-normal">(optional)</span></label>
+                    <input
+                        className="form-input"
+                        placeholder="e.g. Cash, GCash, partial payment..."
+                        value={form.payment_notes}
+                        onChange={set('payment_notes')}
+                    />
+                </div>
+            </div>
+
             <div className="flex justify-end gap-3 pt-2">
                 <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={saving}>
@@ -364,8 +404,99 @@ export default function OrthodonticsTab({ patient }) {
                 </div>
             </motion.div>
 
+            {/* ── Payment History ── */}
+            {adjustments.length > 0 && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card">
+                    <h3 className="font-semibold text-text-primary flex items-center gap-2 mb-4">
+                        <Receipt className="w-4 h-4 text-primary" /> Payment History
+                    </h3>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-border">
+                                    <th className="text-left text-xs text-text-secondary font-medium pb-2 pr-4">#</th>
+                                    <th className="text-left text-xs text-text-secondary font-medium pb-2 pr-4">Date</th>
+                                    <th className="text-right text-xs text-text-secondary font-medium pb-2 pr-4">Paid</th>
+                                    <th className="text-right text-xs text-text-secondary font-medium pb-2 pr-4">Running Total</th>
+                                    <th className="text-right text-xs text-text-secondary font-medium pb-2">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {/* Downpayment row */}
+                                {parseFloat(orthoCase.downpayment) > 0 && (
+                                    <tr className="border-b border-border/50">
+                                        <td className="py-2 pr-4 text-text-secondary">—</td>
+                                        <td className="py-2 pr-4">
+                                            <span className="font-medium text-text-primary">
+                                                {orthoCase.start_date ? formatDate(orthoCase.start_date) : 'Start'}
+                                            </span>
+                                            <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">Downpayment</span>
+                                        </td>
+                                        <td className="py-2 pr-4 text-right font-semibold text-green-600">
+                                            {formatCurrency(orthoCase.downpayment)}
+                                        </td>
+                                        <td className="py-2 pr-4 text-right text-text-primary">
+                                            {formatCurrency(orthoCase.downpayment)}
+                                        </td>
+                                        <td className="py-2 text-right text-text-primary">
+                                            {formatCurrency(Math.max(0, totalCost - parseFloat(orthoCase.downpayment)))}
+                                        </td>
+                                    </tr>
+                                )}
+
+                                {/* Adjustment payment rows (oldest first for the running total) */}
+                                {[...adjustments].reverse().reduce((acc, adj, i) => {
+                                    const prevTotal = acc.runningTotal;
+                                    const paid = parseFloat(adj.amount_paid) || 0;
+                                    acc.runningTotal += paid;
+                                    const balance = Math.max(0, totalCost - acc.runningTotal - parseFloat(orthoCase.downpayment || 0));
+                                    acc.rows.push(
+                                        <tr key={adj.id} className="border-b border-border/50 last:border-0">
+                                            <td className="py-2 pr-4 text-text-secondary">{i + 1}</td>
+                                            <td className="py-2 pr-4">
+                                                <p className="font-medium text-text-primary">{formatDate(adj.adjustment_date)}</p>
+                                                {adj.payment_notes && (
+                                                    <p className="text-xs text-text-secondary">{adj.payment_notes}</p>
+                                                )}
+                                                {adj.performed_by_name && (
+                                                    <p className="text-xs text-text-secondary">by {adj.performed_by_name}</p>
+                                                )}
+                                            </td>
+                                            <td className="py-2 pr-4 text-right">
+                                                {paid > 0
+                                                    ? <span className="font-semibold text-green-600">{formatCurrency(paid)}</span>
+                                                    : <span className="text-text-secondary">—</span>
+                                                }
+                                            </td>
+                                            <td className="py-2 pr-4 text-right font-medium text-text-primary">
+                                                {formatCurrency(acc.runningTotal + parseFloat(orthoCase.downpayment || 0))}
+                                            </td>
+                                            <td className={`py-2 text-right font-semibold ${balance === 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                                {formatCurrency(balance)}
+                                            </td>
+                                        </tr>
+                                    );
+                                    return acc;
+                                }, { runningTotal: 0, rows: [] }).rows}
+                            </tbody>
+                            <tfoot>
+                                <tr className="border-t-2 border-border">
+                                    <td colSpan={2} className="pt-2 text-xs font-semibold text-text-secondary uppercase">Total</td>
+                                    <td className="pt-2 text-right font-bold text-green-600">{formatCurrency(totalPaid)}</td>
+                                    <td />
+                                    <td className={`pt-2 text-right font-bold ${remaining === 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                        {remaining === 0 ? '✓ Fully paid' : formatCurrency(remaining)}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </motion.div>
+            )}
+
             {/* ── Adjustments ── */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
                 <div className="flex items-center justify-between mb-3">
                     <div>
                         <h3 className="font-semibold text-text-primary">Adjustment Records</h3>
@@ -412,8 +543,16 @@ export default function OrthodonticsTab({ patient }) {
                                                 Next: {formatDate(adj.next_adjustment_date)}
                                             </span>
                                         )}
+                                        {parseFloat(adj.amount_paid) > 0 && (
+                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                                                Paid {formatCurrency(adj.amount_paid)}
+                                            </span>
+                                        )}
                                     </div>
                                     {adj.notes && <p className="text-sm text-text-secondary">{adj.notes}</p>}
+                                    {adj.payment_notes && (
+                                        <p className="text-xs text-text-secondary mt-0.5 italic">{adj.payment_notes}</p>
+                                    )}
                                     {adj.performed_by_name && (
                                         <p className="text-xs text-text-secondary mt-1">By: {adj.performed_by_name}</p>
                                     )}
@@ -462,6 +601,7 @@ export default function OrthodonticsTab({ patient }) {
                         patientId={patient.id}
                         caseId={orthoCase.id}
                         adjustment={adjModal !== 'new' ? adjModal : null}
+                        orthoCase={orthoCase}
                         onSave={() => { setAdjModal(null); fetchData(); }}
                         onClose={() => setAdjModal(null)}
                     />

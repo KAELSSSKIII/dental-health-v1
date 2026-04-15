@@ -1,7 +1,22 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, MapPin, User, Shield, Briefcase } from 'lucide-react';
+import { CheckCircle, MapPin, User, Shield, Briefcase, Camera, Upload, RefreshCw, X } from 'lucide-react';
 import axios from 'axios';
+
+function resizeImage(dataUrl, maxPx = 800) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const ratio = Math.min(maxPx / img.width, maxPx / img.height, 1);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * ratio);
+            canvas.height = Math.round(img.height * ratio);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = dataUrl;
+    });
+}
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api' });
 
@@ -29,6 +44,14 @@ export default function PatientIntake() {
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState({});
 
+    // Camera state
+    const videoRef = useRef(null);
+    const streamRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const [cameraOpen, setCameraOpen] = useState(false);
+    const [cameraError, setCameraError] = useState('');
+    const [profilePhoto, setProfilePhoto] = useState(null);
+
     const [form, setForm] = useState({
         last_name: '', first_name: '', middle_name: '', date_of_birth: '',
         sex: '', height: '', weight: '', occupation: '', marital_status: '',
@@ -40,11 +63,73 @@ export default function PatientIntake() {
 
     const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
 
+    // ── Camera helpers ────────────────────────────────────────
+    const openCamera = async () => {
+        setCameraError('');
+        setCameraOpen(true);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } },
+            });
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (err) {
+            setCameraError(
+                err.name === 'NotAllowedError'
+                    ? 'Camera access denied. Please allow camera permission or upload a photo instead.'
+                    : 'Could not access camera. Please upload a photo instead.'
+            );
+        }
+    };
+
+    const stopCamera = () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(t => t.stop());
+            streamRef.current = null;
+        }
+    };
+
+    const capturePhoto = async () => {
+        if (!videoRef.current) return;
+        const video = videoRef.current;
+        const size = Math.min(video.videoWidth, video.videoHeight);
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video,
+            (video.videoWidth - size) / 2, (video.videoHeight - size) / 2,
+            size, size, 0, 0, size, size
+        );
+        const raw = canvas.toDataURL('image/jpeg', 0.9);
+        stopCamera();
+        setCameraOpen(false);
+        const compressed = await resizeImage(raw, 800);
+        setProfilePhoto(compressed);
+        setErrors(e => ({ ...e, profile_photo: undefined }));
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = '';
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            const compressed = await resizeImage(ev.target.result, 800);
+            setProfilePhoto(compressed);
+            setErrors(e => ({ ...e, profile_photo: undefined }));
+        };
+        reader.readAsDataURL(file);
+    };
+
     const validate = () => {
         const errs = {};
         if (!form.last_name.trim()) errs.last_name = 'Last name is required';
         if (!form.first_name.trim()) errs.first_name = 'First name is required';
         if (!form.date_of_birth) errs.date_of_birth = 'Date of birth is required';
+        if (!profilePhoto) errs.profile_photo = 'Patient photo is required';
         setErrors(errs);
         return Object.keys(errs).length === 0;
     };
@@ -57,7 +142,7 @@ export default function PatientIntake() {
         }
         setSaving(true);
         try {
-            await api.post('/patients/intake', form);
+            await api.post('/patients/intake', { ...form, profile_photo: profilePhoto });
             setPatientName(form.first_name);
             setSubmitted(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -268,6 +353,67 @@ export default function PatientIntake() {
                             </Section>
                         </div>
 
+                        {/* Patient Photo */}
+                        <div className="card space-y-4">
+                            <div className="flex items-center gap-2 pb-2 border-b border-border">
+                                <Camera className="w-4 h-4 text-primary" />
+                                <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">Patient Photo</h3>
+                                <span className="text-red-500 ml-0.5 text-sm font-bold">*</span>
+                            </div>
+
+                            {profilePhoto ? (
+                                <div className="flex flex-col items-center gap-3">
+                                    <img
+                                        src={profilePhoto}
+                                        alt="Patient photo"
+                                        className="w-40 h-40 rounded-2xl object-cover border-4 border-primary/20 shadow-md"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
+                                        onClick={() => { setProfilePhoto(null); openCamera(); }}
+                                    >
+                                        <RefreshCw className="w-4 h-4" /> Retake Photo
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center gap-4 py-4">
+                                    <div className={`w-36 h-36 rounded-2xl border-2 border-dashed flex items-center justify-center bg-surface ${errors.profile_photo ? 'border-red-400 bg-red-50' : 'border-border'}`}>
+                                        <Camera className={`w-10 h-10 ${errors.profile_photo ? 'text-red-400' : 'text-text-secondary opacity-40'}`} />
+                                    </div>
+                                    {errors.profile_photo && (
+                                        <p className="text-sm text-red-500 font-medium">{errors.profile_photo}</p>
+                                    )}
+                                    <p className="text-sm text-text-secondary text-center">
+                                        Please take a clear photo of your face for your patient record.
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <button
+                                            type="button"
+                                            className="btn-primary"
+                                            onClick={openCamera}
+                                        >
+                                            <Camera className="w-4 h-4" /> Open Camera
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn-secondary"
+                                            onClick={() => fileInputRef.current?.click()}
+                                        >
+                                            <Upload className="w-4 h-4" /> Upload Photo
+                                        </button>
+                                    </div>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleFileUpload}
+                                    />
+                                </div>
+                            )}
+                        </div>
+
                         {/* Submit */}
                         <div className="card">
                             <p className="text-xs text-text-secondary mb-4">
@@ -289,6 +435,58 @@ export default function PatientIntake() {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Camera modal */}
+            {cameraOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                            <h3 className="font-semibold text-text-primary">Take Your Photo</h3>
+                            <button
+                                type="button"
+                                className="p-1 rounded-lg hover:bg-surface transition-colors"
+                                onClick={() => { stopCamera(); setCameraOpen(false); setCameraError(''); }}
+                            >
+                                <X className="w-5 h-5 text-text-secondary" />
+                            </button>
+                        </div>
+                        <div className="p-5">
+                            {cameraError ? (
+                                <div className="text-center py-6 space-y-4">
+                                    <p className="text-sm text-red-500">{cameraError}</p>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => { setCameraOpen(false); setCameraError(''); fileInputRef.current?.click(); }}
+                                    >
+                                        <Upload className="w-4 h-4" /> Upload a Photo Instead
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-sm text-text-secondary mb-3 text-center">
+                                        Position your face in the center and tap Capture.
+                                    </p>
+                                    <video
+                                        ref={videoRef}
+                                        autoPlay
+                                        playsInline
+                                        muted
+                                        className="w-full aspect-square rounded-xl bg-black object-cover"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="btn-primary w-full justify-center mt-4"
+                                        onClick={capturePhoto}
+                                    >
+                                        <Camera className="w-4 h-4" /> Capture Photo
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

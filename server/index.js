@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -21,8 +21,8 @@ app.use(cors({
     },
     credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ─── Routes ──────────────────────────────────────
 const authRoutes = require('./routes/auth');
@@ -33,6 +33,7 @@ const medicalHistoryRoutes = require('./routes/medicalHistory');
 const dashboardRoutes = require('./routes/dashboard');
 const orthodonticsRoutes = require('./routes/orthodontics');
 const settingsRoutes = require('./routes/settings');
+const photosRoutes = require('./routes/photos');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
@@ -40,6 +41,7 @@ app.use('/api/patients/:id/dental-chart', dentalChartRoutes);
 app.use('/api/patients/:id/visits', visitsRoutes);
 app.use('/api/patients/:id/medical-history', medicalHistoryRoutes);
 app.use('/api/patients/:id/orthodontics', orthodonticsRoutes);
+app.use('/api/patients/:id/photos', photosRoutes);
 // Standalone visit update/delete
 const visitsRouter = require('./routes/visits');
 app.use('/api/visits', visitsRouter);

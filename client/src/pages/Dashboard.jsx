@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Calendar, Clock, Banknote, Eye, UserPlus } from 'lucide-react';
+import { Users, Calendar, Clock, Banknote, Eye } from 'lucide-react';
 import client from '../api/client';
 import { formatDate, formatName, calcAge, formatCurrency } from '../utils/helpers';
-import { VISIT_TYPE_COLORS } from '../utils/constants';
 
 const fadeUp = (i) => ({
     initial: { opacity: 0, y: 20 },
@@ -66,9 +65,9 @@ export default function Dashboard() {
                 <StatCard index={3} icon={Banknote} label="Monthly Revenue" value={stats ? formatCurrency(stats.monthlyRevenue) : null} color="bg-green-50 text-green-700" />
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 gap-6">
                 {/* Recent patients */}
-                <motion.div {...fadeUp(4)} className="card xl:col-span-3">
+                <motion.div {...fadeUp(4)} className="card">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="font-semibold text-text-primary">Recent Patients</h2>
                         <Link to="/patients" className="text-primary text-sm font-medium hover:underline">View all →</Link>
@@ -112,46 +111,6 @@ export default function Dashboard() {
                     </div>
                 </motion.div>
 
-                {/* Today's schedule */}
-                <motion.div {...fadeUp(5)} className="card xl:col-span-2">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="font-semibold text-text-primary">Today's Schedule</h2>
-                        <Link to="/patients/new" className="btn-primary text-xs px-3 py-1.5">
-                            <UserPlus className="w-3.5 h-3.5" /> Add
-                        </Link>
-                    </div>
-                    {loading ? (
-                        <div className="space-y-3">
-                            {[1, 2, 3].map(i => <div key={i} className="skeleton h-16 rounded-lg" />)}
-                        </div>
-                    ) : stats?.todaysSchedule?.length ? (
-                        <div className="space-y-2">
-                            {stats.todaysSchedule.map(v => (
-                                <Link
-                                    key={v.id}
-                                    to={`/patients/${v.patient_id}`}
-                                    className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-bg hover:border-primary/30 transition-all"
-                                >
-                                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                                        {formatDate(v.visit_date, 'h:mm')}
-                                        <span className="text-[9px] ml-0.5">{formatDate(v.visit_date, 'a')}</span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-text-primary truncate">{v.first_name} {v.last_name}</p>
-                                        <span className={`badge text-xs ${VISIT_TYPE_COLORS[v.visit_type] || 'badge-gray'}`}>
-                                            {v.visit_type?.replace('_', ' ')}
-                                        </span>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-8">
-                            <Calendar className="w-8 h-8 text-border mx-auto mb-2" />
-                            <p className="text-text-secondary text-sm">No appointments today</p>
-                        </div>
-                    )}
-                </motion.div>
             </div>
         </div>
     );

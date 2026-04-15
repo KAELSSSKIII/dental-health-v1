@@ -16,7 +16,6 @@ router.get('/stats', verifyToken, async (req, res) => {
             upcomingRes,
             monthlyRevenueRes,
             recentPatientsRes,
-            todaysScheduleRes,
         ] = await Promise.all([
             pool.query("SELECT COUNT(*) FROM patients WHERE is_active = true"),
             pool.query("SELECT COUNT(*) FROM visits WHERE visit_date >= $1 AND visit_date < $2",
@@ -31,16 +30,6 @@ router.get('/stats', verifyToken, async (req, res) => {
         FROM patients p WHERE p.is_active = true
         ORDER BY p.created_at DESC LIMIT 5
       `),
-            pool.query(`
-        SELECT v.id, v.visit_date, v.visit_type, v.next_appointment,
-          p.first_name, p.last_name, p.id AS patient_id
-        FROM visits v
-        JOIN patients p ON v.patient_id = p.id
-        WHERE v.next_appointment = CURRENT_DATE OR
-          (v.visit_date >= $1 AND v.visit_date < $2)
-        ORDER BY v.visit_date
-        LIMIT 10
-      `, [todayStart.toISOString(), new Date(todayStart.getTime() + 86400000).toISOString()]),
         ]);
 
         res.json({
@@ -49,7 +38,6 @@ router.get('/stats', verifyToken, async (req, res) => {
             upcomingAppointments: parseInt(upcomingRes.rows[0].count),
             monthlyRevenue: parseFloat(monthlyRevenueRes.rows[0].total),
             recentPatients: recentPatientsRes.rows,
-            todaysSchedule: todaysScheduleRes.rows,
         });
     } catch (err) {
         console.error(err);

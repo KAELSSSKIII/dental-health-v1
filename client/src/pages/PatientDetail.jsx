@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Pencil, Trash2, ArrowLeft, Phone, Mail, Heart, Stethoscope, Calendar, ClipboardList, Smile } from 'lucide-react';
+import { Pencil, Trash2, ArrowLeft, Phone, Mail, Heart, Stethoscope, Calendar, ClipboardList, Smile, Camera, ZoomIn, ZoomOut, X } from 'lucide-react';
 import client from '../api/client';
 import { formatName, calcAge, formatDate, getInitials } from '../utils/helpers';
 import { useToast } from '../components/Toast';
@@ -12,6 +12,7 @@ import DentalChartTab from '../features/dental-chart/DentalChartTab';
 import VisitsTab from '../features/visits/VisitsTab';
 import MedicalHistoryTab from '../features/medical/MedicalHistoryTab';
 import OrthodonticsTab from '../features/orthodontics/OrthodonticsTab';
+import PhotosTab from '../features/photos/PhotosTab';
 
 const TABS = [
     { id: 'info', label: 'Patient Info', icon: ClipboardList },
@@ -19,6 +20,7 @@ const TABS = [
     { id: 'visits', label: 'Visits', icon: Calendar },
     { id: 'medical', label: 'Medical History', icon: Heart },
     { id: 'orthodontics', label: 'Orthodontics', icon: Smile },
+    { id: 'photos', label: 'Photos', icon: Camera },
 ];
 
 export default function PatientDetail() {
@@ -31,6 +33,8 @@ export default function PatientDetail() {
     const [patient, setPatient] = useState(null);
     const [loading, setLoading] = useState(true);
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [photoZoom, setPhotoZoom] = useState(false);
+    const [zoomScale, setZoomScale] = useState(1);
 
     const setTab = (t) => setSp({ tab: t });
 
@@ -80,9 +84,26 @@ export default function PatientDetail() {
             <div className="card">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
                     {/* Avatar */}
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-md">
-                        {getInitials(formatName(patient))}
-                    </div>
+                    {patient.profile_photo ? (
+                        <button
+                            className="relative group shrink-0 focus:outline-none"
+                            onClick={() => { setZoomScale(1); setPhotoZoom(true); }}
+                            title="Click to view photo"
+                        >
+                            <img
+                                src={patient.profile_photo}
+                                alt={formatName(patient)}
+                                className="w-16 h-16 rounded-2xl object-cover shadow-md border-2 border-border group-hover:border-primary transition-colors"
+                            />
+                            <span className="absolute inset-0 rounded-2xl bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                                <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </span>
+                        </button>
+                    ) : (
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-md">
+                            {getInitials(formatName(patient))}
+                        </div>
+                    )}
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
@@ -159,6 +180,7 @@ export default function PatientDetail() {
                     {activeTab === 'visits' && <VisitsTab patient={patient} />}
                     {activeTab === 'medical' && <MedicalHistoryTab patient={patient} />}
                     {activeTab === 'orthodontics' && <OrthodonticsTab patient={patient} />}
+                    {activeTab === 'photos' && <PhotosTab patient={patient} />}
                 </motion.div>
             </AnimatePresence>
 
@@ -170,6 +192,70 @@ export default function PatientDetail() {
                 onConfirm={handleDelete}
                 onCancel={() => setDeleteOpen(false)}
             />
+
+            {/* Profile photo lightbox */}
+            {photoZoom && patient.profile_photo && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/85"
+                    onClick={() => setPhotoZoom(false)}
+                >
+                    {/* Close */}
+                    <button
+                        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
+                        onClick={() => setPhotoZoom(false)}
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+
+                    {/* Zoom controls */}
+                    <div
+                        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2 z-10"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors disabled:opacity-30"
+                            onClick={() => setZoomScale(s => Math.max(0.5, parseFloat((s - 0.25).toFixed(2))))}
+                            disabled={zoomScale <= 0.5}
+                        >
+                            <ZoomOut className="w-4 h-4" />
+                        </button>
+                        <span className="text-white text-sm font-medium w-12 text-center select-none">
+                            {Math.round(zoomScale * 100)}%
+                        </span>
+                        <button
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors disabled:opacity-30"
+                            onClick={() => setZoomScale(s => Math.min(3, parseFloat((s + 0.25).toFixed(2))))}
+                            disabled={zoomScale >= 3}
+                        >
+                            <ZoomIn className="w-4 h-4" />
+                        </button>
+                        <div className="w-px h-5 bg-white/30 mx-1" />
+                        <button
+                            className="text-white/70 hover:text-white text-xs transition-colors"
+                            onClick={() => setZoomScale(1)}
+                        >
+                            Reset
+                        </button>
+                    </div>
+
+                    {/* Image */}
+                    <div className="overflow-hidden flex items-center justify-center w-full h-full p-16" onClick={e => e.stopPropagation()}>
+                        <motion.img
+                            src={patient.profile_photo}
+                            alt={formatName(patient)}
+                            animate={{ scale: zoomScale }}
+                            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+                            className="max-w-sm w-full rounded-2xl shadow-2xl object-contain select-none"
+                            draggable={false}
+                        />
+                    </div>
+
+                    {/* Patient name */}
+                    <div className="absolute top-5 left-1/2 -translate-x-1/2 text-white/80 text-sm font-medium">
+                        {formatName(patient)}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
