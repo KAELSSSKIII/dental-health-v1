@@ -1,6 +1,9 @@
 {
   "$schema": "https://schema.railpack.com",
+  "build": {
+    "installCmd": "cd server && npm ci"
+  },
   "deploy": {
-    "startCommand": "cd server && npm install && node index.js"
+    "startCommand": "cd server && node index.js"
   }
 }
