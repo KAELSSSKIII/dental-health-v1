@@ -392,6 +392,9 @@ router.post('/appt-form/regenerate', async (req, res) => {
 // GET /api/settings/kiosk (admin-only)
 router.get('/kiosk', requireAdmin, async (req, res) => {
     try {
+        // Ensure column exists — production DB may not have had schema.sql re-run
+        await pool.query('ALTER TABLE clinic_settings ADD COLUMN IF NOT EXISTS kiosk_token VARCHAR(64)');
+
         let result = await pool.query('SELECT id, kiosk_token FROM clinic_settings LIMIT 1');
         if (result.rows.length === 0) {
             result = await pool.query(

@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../db/pool');
 
 async function getKioskRow() {
+    await pool.query('ALTER TABLE clinic_settings ADD COLUMN IF NOT EXISTS kiosk_token VARCHAR(64)');
     const result = await pool.query(
         'SELECT kiosk_token, clinic_name FROM clinic_settings LIMIT 1'
     );
