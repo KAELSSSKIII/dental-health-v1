@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const app = express();
+app.set('trust proxy', 1); // Required for correct IP detection behind Railway's proxy
 
 // ─── Middleware ───────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -34,6 +35,9 @@ const dashboardRoutes = require('./routes/dashboard');
 const orthodonticsRoutes = require('./routes/orthodontics');
 const settingsRoutes = require('./routes/settings');
 const photosRoutes = require('./routes/photos');
+const appointmentsRoutes = require('./routes/appointments');
+const intakeRoutes = require('./routes/intake');
+const appointmentFormRoutes = require('./routes/appointmentForm');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
@@ -47,6 +51,9 @@ const visitsRouter = require('./routes/visits');
 app.use('/api/visits', visitsRouter);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/appointments', appointmentsRoutes);
+app.use('/api/intake', intakeRoutes);
+app.use('/api/appointment-form', appointmentFormRoutes);
 
 // ─── Health check ─────────────────────────────────
 app.get('/api/health', (req, res) => res.json({ status: 'ok', version: '1.0.0' }));

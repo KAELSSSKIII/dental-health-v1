@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, User, MapPin, Briefcase, Shield } from 'lucide-react';
+import { ArrowLeft, Save, User, MapPin, Briefcase, Shield, AlertCircle } from 'lucide-react';
 import client from '../api/client';
 import { useToast } from '../components/Toast';
+import { toLocalDateInput } from '../utils/helpers';
 
 const Section = ({ title, icon: Icon, children }) => (
     <div className="card space-y-4">
@@ -27,6 +28,7 @@ export default function PatientNew() {
     const toast = useToast();
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState({});
+    const [duplicate, setDuplicate] = useState(null);
 
     const [form, setForm] = useState({
         last_name: '', first_name: '', middle_name: '', date_of_birth: '',
@@ -34,7 +36,7 @@ export default function PatientNew() {
         spouse_name: '', address: '', zip_code: '', phone: '', business_address: '',
         business_phone: '', email: '', referred_by: '', preferred_appointment_time: '',
         insurance_provider: '', insurance_id: '', notes: '',
-        record_date: new Date().toISOString().slice(0, 10),
+        record_date: toLocalDateInput(new Date()),
     });
 
     const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
@@ -50,6 +52,7 @@ export default function PatientNew() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setDuplicate(null);
         if (!validate()) return;
         setSaving(true);
         try {
@@ -57,10 +60,12 @@ export default function PatientNew() {
             toast.success('Patient added successfully!');
             navigate(`/patients/${res.data.id}`, { replace: true });
         } catch (err) {
-            const apiErrors = err.response?.data?.errors;
-            if (apiErrors) {
+            if (err.response?.status === 409) {
+                setDuplicate(err.response.data.existingPatient);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (err.response?.data?.errors) {
                 const mapped = {};
-                apiErrors.forEach(e => { mapped[e.path] = e.msg; });
+                err.response.data.errors.forEach(e => { mapped[e.path] = e.msg; });
                 setErrors(mapped);
             } else {
                 toast.error(err.response?.data?.error || 'Failed to add patient');
@@ -87,6 +92,26 @@ export default function PatientNew() {
                     {saving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Patient</>}
                 </button>
             </div>
+
+            {/* Duplicate warning */}
+            {duplicate && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-4 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                        <p className="font-semibold text-amber-800">Patient already exists</p>
+                        <p className="text-sm text-amber-700 mt-0.5">
+                            A record for <strong>{duplicate.last_name}, {duplicate.first_name}</strong> with
+                            the same date of birth already exists in the system. Please update the existing record instead.
+                        </p>
+                        <Link
+                            to={`/patients/${duplicate.id}`}
+                            className="inline-block mt-2 text-sm font-semibold text-primary hover:underline"
+                        >
+                            View existing patient record →
+                        </Link>
+                    </div>
+                </div>
+            )}
 
             {/* Personal */}
             <Section title="Personal Information" icon={User}>

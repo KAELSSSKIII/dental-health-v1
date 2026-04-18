@@ -133,7 +133,13 @@ export default function PatientDetail() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <Link
+                            to={`/appointments?patientId=${patient.id}`}
+                            className="btn-primary"
+                        >
+                            <Calendar className="w-4 h-4" /> Book Appointment
+                        </Link>
                         <button
                             className="btn-secondary"
                             onClick={() => setTab('info')}

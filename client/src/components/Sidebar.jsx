@@ -1,14 +1,15 @@
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Users, UserPlus, Settings, LogOut, X } from 'lucide-react';
+import { Home, Users, UserPlus, Calendar, Settings, LogOut, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getInitials, capitalize } from '../utils/helpers';
 
 const navItems = [
-    { to: '/dashboard', icon: Home, label: 'Dashboard' },
-    { to: '/patients', icon: Users, label: 'Patients' },
-    { to: '/patients/new', icon: UserPlus, label: 'Add Patient' },
-    { to: '/settings', icon: Settings, label: 'Settings' },
+    { to: '/dashboard',    icon: Home,     label: 'Dashboard'    },
+    { to: '/appointments', icon: Calendar, label: 'Appointments' },
+    { to: '/patients',     icon: Users,    label: 'Patients'     },
+    { to: '/patients/new', icon: UserPlus, label: 'Add Patient'  },
+    { to: '/settings',     icon: Settings, label: 'Settings'     },
 ];
 
 export default function Sidebar({ open, onClose }) {

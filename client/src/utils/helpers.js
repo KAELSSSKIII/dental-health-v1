@@ -1,5 +1,18 @@
 import { format, parseISO, differenceInYears, isValid } from 'date-fns';
 
+// Converts any date value (ISO string, Date object) to YYYY-MM-DD using LOCAL timezone.
+// Fixes the off-by-one bug caused by pg returning DATE columns as local-midnight Date objects,
+// which serialize to the previous day in UTC (e.g. "2001-10-24T16:00:00.000Z" for Oct 25 in UTC+8).
+export function toLocalDateInput(date) {
+    if (!date) return '';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 export function formatDate(date, fmt = 'MMM d, yyyy') {
     if (!date) return '—';
     try {

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, Building2, Users, Eye, EyeOff, Plus, Pencil,
-    ToggleLeft, ToggleRight, X, Save, KeyRound, ShieldCheck
+    ToggleLeft, ToggleRight, X, Save, KeyRound, ShieldCheck,
+    ClipboardList, Copy, Check, RefreshCw, Link2,
 } from 'lucide-react';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +14,7 @@ const TABS = [
     { key: 'account', label: 'Account', icon: User },
     { key: 'clinic', label: 'Clinic Info', icon: Building2 },
     { key: 'users', label: 'Users', icon: Users },
+    { key: 'forms', label: 'Forms', icon: ClipboardList },
 ];
 
 const ROLES = ['admin', 'dentist', 'hygienist', 'receptionist'];
@@ -573,6 +575,285 @@ function UsersTab() {
     );
 }
 
+// ─── Reusable form-settings card ─────────────────────────────────────────────
+
+function FormSettingsCard({
+    title, description, formPath,
+    enabled, slug, redirectUrl,
+    onToggle, onSlugChange, onRedirectChange,
+    onRegenerate, onSave,
+    saving, regenerating, copied, onCopy,
+}) {
+    const formUrl = slug ? `${window.location.origin}/${formPath}/${slug}` : '';
+
+    return (
+        <form onSubmit={onSave} className="space-y-5">
+            {/* Enable toggle */}
+            <div className="card">
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <p className="font-semibold text-text-primary">{title}</p>
+                        <p className="text-sm text-text-secondary mt-0.5">
+                            {enabled
+                                ? 'Active — patients with the link can access and submit'
+                                : 'Disabled — patients will see a "Form Unavailable" page'}
+                        </p>
+                    </div>
+                    <button type="button" onClick={onToggle} className="shrink-0" title={enabled ? 'Disable' : 'Enable'}>
+                        {enabled
+                            ? <ToggleRight className="w-11 h-11 text-primary" />
+                            : <ToggleLeft className="w-11 h-11 text-text-secondary" />}
+                    </button>
+                </div>
+            </div>
+
+            {/* URL */}
+            <div className="card space-y-5">
+                <div className="flex items-center gap-2 mb-1">
+                    <Link2 className="w-4 h-4 text-text-secondary" />
+                    <SectionTitle>Form URL</SectionTitle>
+                </div>
+                <FieldGroup label="Current Link">
+                    <div className="flex gap-2">
+                        <input className="form-input flex-1 font-mono text-xs bg-surface cursor-default select-all"
+                            value={formUrl || 'Save a slug below to generate the URL'} readOnly />
+                        <button type="button" className="btn-secondary shrink-0 gap-1.5" onClick={onCopy} disabled={!formUrl}>
+                            {copied ? <><Check className="w-4 h-4 text-green-600" />Copied</> : <><Copy className="w-4 h-4" />Copy</>}
+                        </button>
+                    </div>
+                    <p className="text-xs text-text-secondary mt-1">
+                        Share this link with patients. Keep it private — anyone with the link can submit.
+                    </p>
+                </FieldGroup>
+                <FieldGroup label="URL Slug">
+                    <div className="flex gap-2">
+                        <div className="flex flex-1 items-stretch">
+                            <span className="px-3 py-2 bg-surface border border-border border-r-0 rounded-l-xl text-sm text-text-secondary whitespace-nowrap">
+                                /{formPath}/
+                            </span>
+                            <input className="form-input rounded-l-none flex-1 font-mono"
+                                value={slug}
+                                onChange={e => onSlugChange(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+                                placeholder="abc123xyz" minLength={3} maxLength={50} required />
+                        </div>
+                        <button type="button" className="btn-secondary shrink-0 gap-1.5"
+                            onClick={onRegenerate} disabled={regenerating} title="Generate a new random slug">
+                            <RefreshCw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
+                            {regenerating ? '' : 'Regenerate'}
+                        </button>
+                    </div>
+                    <p className="text-xs text-text-secondary mt-1">
+                        Letters, numbers, hyphens, underscores only. Change anytime to invalidate old links.
+                    </p>
+                </FieldGroup>
+            </div>
+
+            {/* Redirect */}
+            <div className="card space-y-4">
+                <SectionTitle>Post-Submission Redirect</SectionTitle>
+                <FieldGroup label="Redirect URL (optional)">
+                    <input type="url" className="form-input" value={redirectUrl}
+                        onChange={e => onRedirectChange(e.target.value)}
+                        placeholder="https://example.com/thank-you" />
+                </FieldGroup>
+                <p className="text-xs text-text-secondary">
+                    If set, patients are redirected here 2.5 seconds after submission. Leave blank to show the built-in thank-you screen.
+                </p>
+            </div>
+
+            <div className="flex justify-end">
+                <SaveButton loading={saving} />
+            </div>
+        </form>
+    );
+}
+
+// ─── Forms Tab ────────────────────────────────────────────────────────────────
+
+function FormsTab() {
+    const { showToast } = useToast();
+    const [activeForm, setActiveForm] = useState('intake');
+
+    // ── Intake form state ──────────────────────────────────────────────────────
+    const [intake, setIntake] = useState({ enabled: true, slug: '', redirect: '' });
+    const [intakeLoading, setIntakeLoading] = useState(true);
+    const [intakeSaving, setIntakeSaving] = useState(false);
+    const [intakeRegen, setIntakeRegen] = useState(false);
+    const [intakeCopied, setIntakeCopied] = useState(false);
+
+    useEffect(() => {
+        client.get('/settings/intake')
+            .then(res => setIntake({
+                enabled: res.data.intake_enabled ?? true,
+                slug: res.data.intake_slug || '',
+                redirect: res.data.intake_redirect_url || '',
+            }))
+            .catch(() => showToast('Failed to load intake settings', 'error'))
+            .finally(() => setIntakeLoading(false));
+    }, []);
+
+    const saveIntake = async (e) => {
+        e.preventDefault();
+        setIntakeSaving(true);
+        try {
+            const res = await client.put('/settings/intake', {
+                intake_enabled: intake.enabled,
+                intake_slug: intake.slug.trim(),
+                intake_redirect_url: intake.redirect || null,
+            });
+            setIntake(s => ({ ...s, slug: res.data.intake_slug, enabled: res.data.intake_enabled }));
+            showToast('New patient form settings saved', 'success');
+        } catch (err) {
+            showToast(err.response?.data?.error || 'Failed to save', 'error');
+        } finally {
+            setIntakeSaving(false);
+        }
+    };
+
+    const regenIntake = async () => {
+        setIntakeRegen(true);
+        try {
+            const res = await client.post('/settings/intake/regenerate');
+            setIntake(s => ({ ...s, slug: res.data.intake_slug }));
+            showToast('New intake URL generated — remember to save', 'success');
+        } catch { showToast('Failed to regenerate', 'error'); }
+        finally { setIntakeRegen(false); }
+    };
+
+    const copyIntake = () => {
+        const url = `${window.location.origin}/intake/${intake.slug}`;
+        navigator.clipboard.writeText(url);
+        setIntakeCopied(true);
+        setTimeout(() => setIntakeCopied(false), 2000);
+    };
+
+    // ── Appointment form state ─────────────────────────────────────────────────
+    const [appt, setAppt] = useState({ enabled: true, slug: '', redirect: '' });
+    const [apptLoading, setApptLoading] = useState(true);
+    const [apptSaving, setApptSaving] = useState(false);
+    const [apptRegen, setApptRegen] = useState(false);
+    const [apptCopied, setApptCopied] = useState(false);
+
+    useEffect(() => {
+        client.get('/settings/appt-form')
+            .then(res => setAppt({
+                enabled: res.data.appt_form_enabled ?? true,
+                slug: res.data.appt_form_slug || '',
+                redirect: res.data.appt_form_redirect_url || '',
+            }))
+            .catch(() => showToast('Failed to load appointment form settings', 'error'))
+            .finally(() => setApptLoading(false));
+    }, []);
+
+    const saveAppt = async (e) => {
+        e.preventDefault();
+        setApptSaving(true);
+        try {
+            const res = await client.put('/settings/appt-form', {
+                appt_form_enabled: appt.enabled,
+                appt_form_slug: appt.slug.trim(),
+                appt_form_redirect_url: appt.redirect || null,
+            });
+            setAppt(s => ({ ...s, slug: res.data.appt_form_slug, enabled: res.data.appt_form_enabled }));
+            showToast('Appointment form settings saved', 'success');
+        } catch (err) {
+            showToast(err.response?.data?.error || 'Failed to save', 'error');
+        } finally {
+            setApptSaving(false);
+        }
+    };
+
+    const regenAppt = async () => {
+        setApptRegen(true);
+        try {
+            const res = await client.post('/settings/appt-form/regenerate');
+            setAppt(s => ({ ...s, slug: res.data.appt_form_slug }));
+            showToast('New appointment form URL generated — remember to save', 'success');
+        } catch { showToast('Failed to regenerate', 'error'); }
+        finally { setApptRegen(false); }
+    };
+
+    const copyAppt = () => {
+        const url = `${window.location.origin}/appointment/${appt.slug}`;
+        navigator.clipboard.writeText(url);
+        setApptCopied(true);
+        setTimeout(() => setApptCopied(false), 2000);
+    };
+
+    if (intakeLoading || apptLoading) {
+        return (
+            <div className="space-y-4">
+                <div className="card space-y-4">
+                    {[1, 2, 3].map(i => <div key={i} className="skeleton h-10 rounded" />)}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Sub-tab switcher */}
+            <div className="flex gap-1 bg-bg border border-border rounded-xl p-1 w-fit">
+                {[
+                    { key: 'intake', label: 'New Patient Form' },
+                    { key: 'appointment', label: 'Appointment Request Form' },
+                ].map(tab => (
+                    <button key={tab.key} type="button"
+                        onClick={() => setActiveForm(tab.key)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                            activeForm === tab.key
+                                ? 'bg-white text-text-primary shadow-sm'
+                                : 'text-text-secondary hover:text-text-primary'
+                        }`}>
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            {activeForm === 'intake' && (
+                <FormSettingsCard
+                    title="New Patient Registration Form"
+                    description="For first-time patients to register their information."
+                    formPath="intake"
+                    enabled={intake.enabled}
+                    slug={intake.slug}
+                    redirectUrl={intake.redirect}
+                    onToggle={() => setIntake(s => ({ ...s, enabled: !s.enabled }))}
+                    onSlugChange={v => setIntake(s => ({ ...s, slug: v }))}
+                    onRedirectChange={v => setIntake(s => ({ ...s, redirect: v }))}
+                    onRegenerate={regenIntake}
+                    onSave={saveIntake}
+                    saving={intakeSaving}
+                    regenerating={intakeRegen}
+                    copied={intakeCopied}
+                    onCopy={copyIntake}
+                />
+            )}
+
+            {activeForm === 'appointment' && (
+                <FormSettingsCard
+                    title="Appointment Request Form"
+                    description="For returning patients to request an appointment."
+                    formPath="appointment"
+                    enabled={appt.enabled}
+                    slug={appt.slug}
+                    redirectUrl={appt.redirect}
+                    onToggle={() => setAppt(s => ({ ...s, enabled: !s.enabled }))}
+                    onSlugChange={v => setAppt(s => ({ ...s, slug: v }))}
+                    onRedirectChange={v => setAppt(s => ({ ...s, redirect: v }))}
+                    onRegenerate={regenAppt}
+                    onSave={saveAppt}
+                    saving={apptSaving}
+                    regenerating={apptRegen}
+                    copied={apptCopied}
+                    onCopy={copyAppt}
+                />
+            )}
+        </div>
+    );
+}
+
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Settings() {
@@ -609,6 +890,7 @@ export default function Settings() {
                     {activeTab === 'account' && <AccountTab />}
                     {activeTab === 'clinic' && <ClinicTab />}
                     {activeTab === 'users' && <UsersTab />}
+                    {activeTab === 'forms' && <FormsTab />}
                 </motion.div>
             </AnimatePresence>
         </div>

@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const router = express.Router();
 const pool = require('../db/pool');
 const { verifyToken } = require('../middleware/auth');
+const { publicFormLimiter, checkHoneypot, checkTiming, checkDuplicateCooldown } = require('../middleware/antiSpam');
 
 // GET /api/patients - paginated + search
 router.get('/', verifyToken, async (req, res) => {
@@ -91,7 +92,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 
 // POST /api/patients/intake - public, no auth required
-router.post('/intake', [
+router.post('/intake', publicFormLimiter, checkHoneypot, checkTiming, checkDuplicateCooldown, [
     body('last_name').trim().notEmpty().withMessage('Last name is required'),
     body('first_name').trim().notEmpty().withMessage('First name is required'),
     body('date_of_birth').isDate().withMessage('Valid date of birth is required'),
@@ -107,6 +108,50 @@ router.post('/intake', [
     } = req.body;
 
     try {
+        // Check for existing patient with same name + birthday
+        const dupCheck = await pool.query(
+            `SELECT id FROM patients
+             WHERE LOWER(TRIM(last_name)) = LOWER(TRIM($1))
+               AND LOWER(TRIM(first_name)) = LOWER(TRIM($2))
+               AND date_of_birth = $3
+               AND is_active = true
+             LIMIT 1`,
+            [last_name, first_name, date_of_birth]
+        );
+
+        if (dupCheck.rows.length > 0) {
+            // Patient already exists — update their contact/personal info instead
+            const patientId = dupCheck.rows[0].id;
+            await pool.query(`
+                UPDATE patients SET
+                  phone                     = CASE WHEN $1  IS NOT NULL THEN $1  ELSE phone                     END,
+                  email                     = CASE WHEN $2  IS NOT NULL THEN $2  ELSE email                     END,
+                  address                   = CASE WHEN $3  IS NOT NULL THEN $3  ELSE address                   END,
+                  zip_code                  = CASE WHEN $4  IS NOT NULL THEN $4  ELSE zip_code                  END,
+                  business_phone            = CASE WHEN $5  IS NOT NULL THEN $5  ELSE business_phone            END,
+                  business_address          = CASE WHEN $6  IS NOT NULL THEN $6  ELSE business_address          END,
+                  insurance_provider        = CASE WHEN $7  IS NOT NULL THEN $7  ELSE insurance_provider        END,
+                  insurance_id              = CASE WHEN $8  IS NOT NULL THEN $8  ELSE insurance_id              END,
+                  preferred_appointment_time= CASE WHEN $9  IS NOT NULL THEN $9  ELSE preferred_appointment_time END,
+                  height                    = CASE WHEN $10 IS NOT NULL THEN $10 ELSE height                    END,
+                  weight                    = CASE WHEN $11 IS NOT NULL THEN $11 ELSE weight                    END,
+                  occupation                = CASE WHEN $12 IS NOT NULL THEN $12 ELSE occupation                END,
+                  profile_photo             = CASE WHEN $13 IS NOT NULL THEN $13 ELSE profile_photo             END,
+                  updated_at                = NOW()
+                WHERE id = $14
+            `, [
+                phone || null, email || null, address || null, zip_code || null,
+                business_phone || null, business_address || null,
+                insurance_provider || null, insurance_id || null,
+                preferred_appointment_time || null, height || null, weight || null,
+                occupation || null,
+                (profile_photo && profile_photo.startsWith('data:image/')) ? profile_photo : null,
+                patientId,
+            ]);
+            res.locals.recordSpamKey?.();
+            return res.json({ updated: true, patientName: first_name });
+        }
+
         const result = await pool.query(`
       INSERT INTO patients (
         last_name, first_name, middle_name, date_of_birth, sex, height, weight,
@@ -123,7 +168,8 @@ router.post('/intake', [
             insurance_provider || null, insurance_id || null, notes || null, record_date || null,
             (profile_photo && profile_photo.startsWith('data:image/')) ? profile_photo : null,
         ]);
-        res.status(201).json(result.rows[0]);
+        res.locals.recordSpamKey?.();
+        res.status(201).json({ updated: false, patientName: first_name, patient: result.rows[0] });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
@@ -147,6 +193,22 @@ router.post('/', verifyToken, [
     } = req.body;
 
     try {
+        const dupCheck = await pool.query(
+            `SELECT id, first_name, last_name, date_of_birth FROM patients
+             WHERE LOWER(TRIM(last_name)) = LOWER(TRIM($1))
+               AND LOWER(TRIM(first_name)) = LOWER(TRIM($2))
+               AND date_of_birth = $3
+               AND is_active = true
+             LIMIT 1`,
+            [last_name, first_name, date_of_birth]
+        );
+        if (dupCheck.rows.length > 0) {
+            return res.status(409).json({
+                error: 'A patient with this name and date of birth already exists in the system.',
+                existingPatient: dupCheck.rows[0],
+            });
+        }
+
         const result = await pool.query(`
       INSERT INTO patients (
         last_name, first_name, middle_name, date_of_birth, sex, height, weight,

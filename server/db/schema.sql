@@ -225,6 +225,22 @@ CREATE TABLE IF NOT EXISTS patient_photos (
 );
 
 -- ============================================
+-- APPOINTMENTS
+-- ============================================
+CREATE TABLE IF NOT EXISTS appointments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
+  dentist_id UUID REFERENCES admins(id),
+  appointment_date TIMESTAMPTZ NOT NULL,
+  duration_minutes INTEGER DEFAULT 60 CHECK (duration_minutes > 0),
+  appointment_type VARCHAR(50) NOT NULL DEFAULT 'checkup',
+  status VARCHAR(20) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled', 'no_show')),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by UUID REFERENCES admins(id)
+);
+
+-- ============================================
 -- INDEXES
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_patients_name ON patients(last_name, first_name);
@@ -232,3 +248,39 @@ CREATE INDEX IF NOT EXISTS idx_dental_chart_patient ON dental_chart(patient_id);
 CREATE INDEX IF NOT EXISTS idx_visits_patient ON visits(patient_id);
 CREATE INDEX IF NOT EXISTS idx_visits_date ON visits(visit_date);
 CREATE INDEX IF NOT EXISTS idx_patient_photos_patient ON patient_photos(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(appointment_date);
+CREATE INDEX IF NOT EXISTS idx_appointments_patient ON appointments(patient_id);
+
+-- ============================================
+-- INTAKE FORM SETTINGS (additions to clinic_settings)
+-- ============================================
+ALTER TABLE clinic_settings ADD COLUMN IF NOT EXISTS intake_enabled BOOLEAN DEFAULT true;
+ALTER TABLE clinic_settings ADD COLUMN IF NOT EXISTS intake_slug VARCHAR(100);
+ALTER TABLE clinic_settings ADD COLUMN IF NOT EXISTS intake_redirect_url VARCHAR(500);
+
+-- Appointment request form settings
+ALTER TABLE clinic_settings ADD COLUMN IF NOT EXISTS appt_form_enabled BOOLEAN DEFAULT true;
+ALTER TABLE clinic_settings ADD COLUMN IF NOT EXISTS appt_form_slug VARCHAR(100);
+ALTER TABLE clinic_settings ADD COLUMN IF NOT EXISTS appt_form_redirect_url VARCHAR(500);
+
+-- Add 'pending' status for patient-submitted appointment requests
+DO $$
+BEGIN
+    ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_status_check;
+    ALTER TABLE appointments ADD CONSTRAINT appointments_status_check
+        CHECK (status IN ('pending', 'scheduled', 'completed', 'cancelled', 'no_show'));
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- ============================================
+-- INTAKE SUBMISSIONS
+-- ============================================
+CREATE TABLE IF NOT EXISTS intake_submissions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  submitted_at TIMESTAMPTZ DEFAULT NOW(),
+  ip_address VARCHAR(45),
+  UNIQUE(patient_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_intake_submissions_patient ON intake_submissions(patient_id);

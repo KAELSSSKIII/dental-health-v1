@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Save, MapPin, Phone, User, Calendar, Briefcase, Heart, Shield } from 'lucide-react';
 import client from '../../api/client';
 import { useToast } from '../../components/Toast';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, toLocalDateInput } from '../../utils/helpers';
 import { printPatientRecord } from '../../utils/print';
 
 const Section = ({ title, icon: Icon, children }) => (
@@ -55,7 +55,7 @@ export default function PatientInfoTab({ patient, onSave }) {
                 last_name: patient.last_name || '',
                 first_name: patient.first_name || '',
                 middle_name: patient.middle_name || '',
-                date_of_birth: patient.date_of_birth ? patient.date_of_birth.slice(0, 10) : '',
+                date_of_birth: toLocalDateInput(patient.date_of_birth),
                 sex: patient.sex || '',
                 height: patient.height || '',
                 weight: patient.weight || '',
@@ -73,7 +73,7 @@ export default function PatientInfoTab({ patient, onSave }) {
                 insurance_provider: patient.insurance_provider || '',
                 insurance_id: patient.insurance_id || '',
                 notes: patient.notes || '',
-                record_date: patient.record_date ? patient.record_date.slice(0, 10) : '',
+                record_date: toLocalDateInput(patient.record_date),
             });
         }
     }, [patient]);

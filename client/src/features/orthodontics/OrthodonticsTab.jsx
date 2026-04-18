@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, RefreshCw, DollarSign, Calendar, Smile, Receipt } from 'lucide-react';
 import client from '../../api/client';
 import { useToast } from '../../components/Toast';
-import { formatDate, formatCurrency } from '../../utils/helpers';
+import { formatDate, formatCurrency, toLocalDateInput } from '../../utils/helpers';
 import { BRACKET_TYPES, ORTHO_STATUSES } from '../../utils/constants';
 import Modal from '../../components/Modal';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -16,9 +16,9 @@ function CaseModal({ patientId, orthoCase, onSave, onClose }) {
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({
         bracket_type: orthoCase?.bracket_type || 'metal',
-        start_date: orthoCase?.start_date ? orthoCase.start_date.slice(0, 10) : '',
-        estimated_end_date: orthoCase?.estimated_end_date ? orthoCase.estimated_end_date.slice(0, 10) : '',
-        actual_end_date: orthoCase?.actual_end_date ? orthoCase.actual_end_date.slice(0, 10) : '',
+        start_date: orthoCase?.start_date ? toLocalDateInput(orthoCase.start_date) : '',
+        estimated_end_date: orthoCase?.estimated_end_date ? toLocalDateInput(orthoCase.estimated_end_date) : '',
+        actual_end_date: orthoCase?.actual_end_date ? toLocalDateInput(orthoCase.actual_end_date) : '',
         total_cost: orthoCase?.total_cost || '',
         downpayment: orthoCase?.downpayment || '',
         status: orthoCase?.status || 'active',
@@ -169,9 +169,9 @@ function AdjustmentModal({ patientId, caseId, adjustment, orthoCase, onSave, onC
     const toast = useToast();
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({
-        adjustment_date: adjustment?.adjustment_date ? adjustment.adjustment_date.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        adjustment_date: adjustment?.adjustment_date ? toLocalDateInput(adjustment.adjustment_date) : toLocalDateInput(new Date()),
         notes: adjustment?.notes || '',
-        next_adjustment_date: adjustment?.next_adjustment_date ? adjustment.next_adjustment_date.slice(0, 10) : '',
+        next_adjustment_date: adjustment?.next_adjustment_date ? toLocalDateInput(adjustment.next_adjustment_date) : '',
         amount_paid: adjustment?.amount_paid ?? '',
         payment_notes: adjustment?.payment_notes || '',
     });

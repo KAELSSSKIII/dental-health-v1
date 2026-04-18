@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Save, Heart, Pill, AlertTriangle, Activity } from 'lucide-react';
 import client from '../../api/client';
 import { useToast } from '../../components/Toast';
-import { formatDate } from '../../utils/helpers';
+import { formatDate, toLocalDateInput } from '../../utils/helpers';
 
 const Section = ({ title, icon: Icon, children }) => (
     <div className="card space-y-4">
@@ -99,7 +99,7 @@ export default function MedicalHistoryTab({ patient }) {
                         <input
                             type="date"
                             className="form-input"
-                            value={form.last_physical_exam ? form.last_physical_exam.slice(0, 10) : ''}
+                            value={toLocalDateInput(form.last_physical_exam)}
                             onChange={setInput('last_physical_exam')}
                         />
                     </div>

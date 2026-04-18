@@ -233,4 +233,181 @@ router.patch('/users/:id/status', requireAdmin, async (req, res) => {
     }
 });
 
+// ─── Intake Form Settings ─────────────────────────────────────────────────────
+
+function generateSlug() {
+    return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 8);
+}
+
+// GET /api/settings/intake
+router.get('/intake', async (req, res) => {
+    try {
+        let result = await pool.query(
+            'SELECT id, intake_enabled, intake_slug, intake_redirect_url FROM clinic_settings LIMIT 1'
+        );
+        // Auto-create row if none exists
+        if (result.rows.length === 0) {
+            const slug = generateSlug();
+            result = await pool.query(
+                `INSERT INTO clinic_settings (clinic_name, intake_enabled, intake_slug)
+                 VALUES ('Dental Clinic', true, $1) RETURNING id, intake_enabled, intake_slug, intake_redirect_url`,
+                [slug]
+            );
+        }
+        const row = result.rows[0];
+        // Auto-generate slug if never set
+        if (!row.intake_slug) {
+            const slug = generateSlug();
+            await pool.query('UPDATE clinic_settings SET intake_slug = $1 WHERE id = $2', [slug, row.id]);
+            row.intake_slug = slug;
+        }
+        res.json({
+            intake_enabled: row.intake_enabled ?? true,
+            intake_slug: row.intake_slug,
+            intake_redirect_url: row.intake_redirect_url || '',
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// PUT /api/settings/intake
+router.put('/intake', async (req, res) => {
+    const { intake_enabled, intake_slug, intake_redirect_url } = req.body;
+    if (!intake_slug || !/^[a-zA-Z0-9_-]{3,50}$/.test(intake_slug.trim())) {
+        return res.status(400).json({ error: 'Slug must be 3–50 characters: letters, numbers, hyphens, underscores only' });
+    }
+    try {
+        const existing = await pool.query('SELECT id FROM clinic_settings LIMIT 1');
+        let result;
+        if (existing.rows.length === 0) {
+            result = await pool.query(
+                `INSERT INTO clinic_settings (clinic_name, intake_enabled, intake_slug, intake_redirect_url)
+                 VALUES ('Dental Clinic', $1, $2, $3)
+                 RETURNING intake_enabled, intake_slug, intake_redirect_url`,
+                [intake_enabled !== false, intake_slug.trim(), intake_redirect_url || null]
+            );
+        } else {
+            result = await pool.query(
+                `UPDATE clinic_settings
+                 SET intake_enabled = $1, intake_slug = $2, intake_redirect_url = $3, updated_at = NOW()
+                 WHERE id = $4
+                 RETURNING intake_enabled, intake_slug, intake_redirect_url`,
+                [intake_enabled !== false, intake_slug.trim(), intake_redirect_url || null, existing.rows[0].id]
+            );
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ─── Appointment Form Settings ────────────────────────────────────────────────
+
+// GET /api/settings/appt-form
+router.get('/appt-form', async (req, res) => {
+    try {
+        let result = await pool.query(
+            'SELECT id, appt_form_enabled, appt_form_slug, appt_form_redirect_url FROM clinic_settings LIMIT 1'
+        );
+        if (result.rows.length === 0) {
+            const slug = generateSlug();
+            result = await pool.query(
+                `INSERT INTO clinic_settings (clinic_name, appt_form_enabled, appt_form_slug)
+                 VALUES ('Dental Clinic', true, $1)
+                 RETURNING id, appt_form_enabled, appt_form_slug, appt_form_redirect_url`,
+                [slug]
+            );
+        }
+        const row = result.rows[0];
+        if (!row.appt_form_slug) {
+            const slug = generateSlug();
+            await pool.query('UPDATE clinic_settings SET appt_form_slug = $1 WHERE id = $2', [slug, row.id]);
+            row.appt_form_slug = slug;
+        }
+        res.json({
+            appt_form_enabled: row.appt_form_enabled ?? true,
+            appt_form_slug: row.appt_form_slug,
+            appt_form_redirect_url: row.appt_form_redirect_url || '',
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// PUT /api/settings/appt-form
+router.put('/appt-form', async (req, res) => {
+    const { appt_form_enabled, appt_form_slug, appt_form_redirect_url } = req.body;
+    if (!appt_form_slug || !/^[a-zA-Z0-9_-]{3,50}$/.test(appt_form_slug.trim())) {
+        return res.status(400).json({ error: 'Slug must be 3–50 characters: letters, numbers, hyphens, underscores only' });
+    }
+    try {
+        const existing = await pool.query('SELECT id FROM clinic_settings LIMIT 1');
+        let result;
+        if (existing.rows.length === 0) {
+            result = await pool.query(
+                `INSERT INTO clinic_settings (clinic_name, appt_form_enabled, appt_form_slug, appt_form_redirect_url)
+                 VALUES ('Dental Clinic', $1, $2, $3)
+                 RETURNING appt_form_enabled, appt_form_slug, appt_form_redirect_url`,
+                [appt_form_enabled !== false, appt_form_slug.trim(), appt_form_redirect_url || null]
+            );
+        } else {
+            result = await pool.query(
+                `UPDATE clinic_settings
+                 SET appt_form_enabled = $1, appt_form_slug = $2, appt_form_redirect_url = $3, updated_at = NOW()
+                 WHERE id = $4
+                 RETURNING appt_form_enabled, appt_form_slug, appt_form_redirect_url`,
+                [appt_form_enabled !== false, appt_form_slug.trim(), appt_form_redirect_url || null, existing.rows[0].id]
+            );
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// POST /api/settings/appt-form/regenerate
+router.post('/appt-form/regenerate', async (req, res) => {
+    const slug = generateSlug();
+    try {
+        const existing = await pool.query('SELECT id FROM clinic_settings LIMIT 1');
+        if (existing.rows.length === 0) {
+            await pool.query(`INSERT INTO clinic_settings (clinic_name, appt_form_slug) VALUES ('Dental Clinic', $1)`, [slug]);
+        } else {
+            await pool.query('UPDATE clinic_settings SET appt_form_slug = $1, updated_at = NOW() WHERE id = $2', [slug, existing.rows[0].id]);
+        }
+        res.json({ appt_form_slug: slug });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// POST /api/settings/intake/regenerate
+router.post('/intake/regenerate', async (req, res) => {
+    const slug = generateSlug();
+    try {
+        const existing = await pool.query('SELECT id FROM clinic_settings LIMIT 1');
+        if (existing.rows.length === 0) {
+            await pool.query(
+                `INSERT INTO clinic_settings (clinic_name, intake_slug) VALUES ('Dental Clinic', $1)`,
+                [slug]
+            );
+        } else {
+            await pool.query(
+                'UPDATE clinic_settings SET intake_slug = $1, updated_at = NOW() WHERE id = $2',
+                [slug, existing.rows[0].id]
+            );
+        }
+        res.json({ intake_slug: slug });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 module.exports = router;

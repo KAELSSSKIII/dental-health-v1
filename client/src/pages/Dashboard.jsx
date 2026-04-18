@@ -11,6 +11,12 @@ const fadeUp = (i) => ({
     transition: { delay: i * 0.08, duration: 0.4 },
 });
 
+const REVENUE_PERIODS = [
+    { value: 'day', label: 'Day', statLabel: "Today's Revenue" },
+    { value: 'biweek', label: 'Bi-week', statLabel: 'Bi-weekly Revenue' },
+    { value: 'month', label: 'Month', statLabel: 'Monthly Revenue' },
+];
+
 function StatCard({ icon: Icon, label, value, color, index }) {
     return (
         <motion.div {...fadeUp(index)} className="card flex items-center gap-4">
@@ -20,6 +26,38 @@ function StatCard({ icon: Icon, label, value, color, index }) {
             <div>
                 <p className="text-text-secondary text-sm font-medium">{label}</p>
                 <p className="text-2xl font-bold text-text-primary mt-0.5">{value ?? '—'}</p>
+            </div>
+        </motion.div>
+    );
+}
+
+function RevenueStatCard({ label, value, revenuePeriod, onPeriodChange }) {
+    return (
+        <motion.div {...fadeUp(3)} className="card">
+            <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 bg-green-50 text-green-700">
+                    <Banknote className="w-7 h-7" />
+                </div>
+                <div className="min-w-0">
+                    <p className="text-text-secondary text-sm font-medium">{label}</p>
+                    <p className="text-2xl font-bold text-text-primary mt-0.5">{value ?? 'â€”'}</p>
+                </div>
+            </div>
+            <div className="mt-3 grid grid-cols-3 rounded-lg border border-border overflow-hidden text-xs font-medium">
+                {REVENUE_PERIODS.map(period => (
+                    <button
+                        key={period.value}
+                        type="button"
+                        className={`py-1.5 transition-colors ${
+                            revenuePeriod === period.value
+                                ? 'bg-primary text-white'
+                                : 'bg-white text-text-secondary hover:bg-surface'
+                        }`}
+                        onClick={() => onPeriodChange(period.value)}
+                    >
+                        {period.label}
+                    </button>
+                ))}
             </div>
         </motion.div>
     );
@@ -38,17 +76,26 @@ function SkeletonRow() {
 export default function Dashboard() {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [revenuePeriod, setRevenuePeriod] = useState('month');
+    const revenueMeta = REVENUE_PERIODS.find(p => p.value === revenuePeriod) || REVENUE_PERIODS[2];
 
     useEffect(() => {
+        let cancelled = false;
+
         (async () => {
             try {
-                const res = await client.get('/dashboard/stats');
+                const res = await client.get('/dashboard/stats', {
+                    params: { revenuePeriod },
+                });
+                if (cancelled) return;
                 setStats(res.data);
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         })();
-    }, []);
+
+        return () => { cancelled = true; };
+    }, [revenuePeriod]);
 
     return (
         <div className="space-y-6 animate-fade-up">
@@ -60,9 +107,14 @@ export default function Dashboard() {
             {/* Stat cards */}
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
                 <StatCard index={0} icon={Users} label="Total Patients" value={stats?.totalPatients} color="bg-teal-50 text-teal-600" />
-                <StatCard index={1} icon={Calendar} label="Today's Visits" value={stats?.visitsToday} color="bg-blue-50 text-blue-600" />
+                <StatCard index={1} icon={Calendar} label="Today's Appointments" value={stats?.appointmentsToday} color="bg-blue-50 text-blue-600" />
                 <StatCard index={2} icon={Clock} label="Upcoming Appointments" value={stats?.upcomingAppointments} color="bg-amber-50 text-amber-600" />
-                <StatCard index={3} icon={Banknote} label="Monthly Revenue" value={stats ? formatCurrency(stats.monthlyRevenue) : null} color="bg-green-50 text-green-700" />
+                <RevenueStatCard
+                    label={revenueMeta.statLabel}
+                    value={stats ? formatCurrency(stats.monthlyRevenue) : null}
+                    revenuePeriod={revenuePeriod}
+                    onPeriodChange={setRevenuePeriod}
+                />
             </div>
 
             <div className="grid grid-cols-1 gap-6">

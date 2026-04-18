@@ -4,7 +4,7 @@ import { Plus, Pencil, Trash2, Calendar, User, RefreshCw, Printer, Receipt, File
 
 import client from '../../api/client';
 import { useToast } from '../../components/Toast';
-import { formatDate, formatCurrency, capitalize } from '../../utils/helpers';
+import { formatDate, formatCurrency, capitalize, toLocalDateInput } from '../../utils/helpers';
 import { VISIT_TYPES, PAYMENT_STATUSES, VISIT_TYPE_COLORS } from '../../utils/constants';
 import Modal from '../../components/Modal';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -16,14 +16,14 @@ function VisitForm({ patientId, visit, onSave, onClose }) {
     const toast = useToast();
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({
-        visit_date: visit?.visit_date ? visit.visit_date.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        visit_date: visit?.visit_date ? toLocalDateInput(visit.visit_date) : toLocalDateInput(new Date()),
         visit_type: visit?.visit_type || 'checkup',
         chief_complaint: visit?.chief_complaint || '',
         diagnosis: visit?.diagnosis || '',
         treatment_performed: visit?.treatment_performed || '',
         teeth_treated: visit?.teeth_treated || '',
         prescriptions: visit?.prescriptions || '',
-        next_appointment: visit?.next_appointment ? visit.next_appointment.slice(0, 10) : '',
+        next_appointment: visit?.next_appointment ? toLocalDateInput(visit.next_appointment) : '',
         cost: visit?.cost || '',
         payment_status: visit?.payment_status || 'pending',
         notes: visit?.notes || '',

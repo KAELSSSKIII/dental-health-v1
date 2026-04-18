@@ -69,6 +69,22 @@ export const ORTHO_STATUSES = [
     { value: 'discontinued', label: 'Discontinued', class: 'badge-red' },
 ];
 
+export const APPOINTMENT_STATUSES = [
+    { value: 'pending',   label: 'Pending'   },
+    { value: 'scheduled', label: 'Scheduled' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'no_show',   label: 'No Show'   },
+];
+
+export const APPOINTMENT_STATUS_STYLES = {
+    pending:   { bg: 'bg-amber-100',  border: 'border-amber-400',  text: 'text-amber-800',  dot: 'bg-amber-500'  },
+    scheduled: { bg: 'bg-blue-100',   border: 'border-blue-400',   text: 'text-blue-800',   dot: 'bg-blue-500'   },
+    completed: { bg: 'bg-green-100',  border: 'border-green-400',  text: 'text-green-800',  dot: 'bg-green-500'  },
+    cancelled: { bg: 'bg-gray-100',   border: 'border-gray-300',   text: 'text-gray-500',   dot: 'bg-gray-400'   },
+    no_show:   { bg: 'bg-red-100',    border: 'border-red-400',    text: 'text-red-700',    dot: 'bg-red-500'    },
+};
+
 export const VISIT_TYPE_COLORS = {
     checkup: 'badge-blue', cleaning: 'badge-teal', filling: 'badge-purple',
     extraction: 'badge-red', root_canal: 'badge-orange', crown: 'badge-amber',

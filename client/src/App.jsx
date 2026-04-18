@@ -9,6 +9,8 @@ import PatientList from './pages/PatientList';
 import PatientDetail from './pages/PatientDetail';
 import PatientNew from './pages/PatientNew';
 import PatientIntake from './pages/PatientIntake';
+import AppointmentForm from './pages/AppointmentForm';
+import Appointments from './pages/Appointments';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
@@ -19,10 +21,12 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/intake" element={<PatientIntake />} />
+          <Route path="/intake/:slug" element={<PatientIntake />} />
+          <Route path="/appointment/:slug" element={<AppointmentForm />} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="appointments" element={<Appointments />} />
             <Route path="patients" element={<PatientList />} />
             <Route path="patients/new" element={<PatientNew />} />
             <Route path="patients/:id" element={<PatientDetail />} />
