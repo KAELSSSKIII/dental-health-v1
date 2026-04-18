@@ -139,9 +139,17 @@ export default function PatientList() {
                                         <td className="px-4 py-3.5 text-text-secondary">{start + idx}</td>
                                         <td className="px-4 py-3.5">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                                                    {p.first_name?.[0]}{p.last_name?.[0]}
-                                                </div>
+                                                {p.profile_photo ? (
+                                                    <img
+                                                        src={p.profile_photo}
+                                                        alt={formatName(p, 'last-first')}
+                                                        className="w-8 h-8 rounded-full object-cover shrink-0 border border-border"
+                                                    />
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                                                        {p.first_name?.[0]}{p.last_name?.[0]}
+                                                    </div>
+                                                )}
                                                 <span className="font-medium text-text-primary">{formatName(p, 'last-first')}</span>
                                             </div>
                                         </td>

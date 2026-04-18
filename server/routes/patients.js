@@ -36,7 +36,7 @@ router.get('/', verifyToken, async (req, res) => {
         const patientsRes = await pool.query(`
       SELECT
         p.id, p.last_name, p.first_name, p.middle_name, p.date_of_birth, p.sex,
-        p.phone, p.email, p.address, p.record_date, p.created_at,
+        p.phone, p.email, p.address, p.record_date, p.created_at, p.profile_photo,
         (
           SELECT COUNT(*) FROM dental_chart dc
           WHERE dc.patient_id = p.id AND dc.status != 'healthy'

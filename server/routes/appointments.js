@@ -3,6 +3,40 @@ const router = express.Router();
 const pool = require('../db/pool');
 const { verifyToken } = require('../middleware/auth');
 
+// GET /api/appointments/notifications — pending requests + today's schedule
+router.get('/notifications', verifyToken, async (req, res) => {
+    try {
+        const [pendingRes, todayRes] = await Promise.all([
+            pool.query(`
+                SELECT a.id, a.appointment_date, a.appointment_type, a.created_at,
+                       p.first_name, p.last_name
+                FROM appointments a
+                JOIN patients p ON a.patient_id = p.id
+                WHERE a.status = 'pending'
+                ORDER BY a.created_at DESC
+                LIMIT 20
+            `),
+            pool.query(`
+                SELECT a.id, a.appointment_date, a.appointment_type, a.status,
+                       p.first_name, p.last_name
+                FROM appointments a
+                JOIN patients p ON a.patient_id = p.id
+                WHERE a.appointment_date >= CURRENT_DATE
+                  AND a.appointment_date < CURRENT_DATE + INTERVAL '1 day'
+                  AND a.status NOT IN ('cancelled', 'completed')
+                ORDER BY a.appointment_date
+            `),
+        ]);
+        res.json({
+            pending: pendingRes.rows,
+            today: todayRes.rows,
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // GET /api/appointments/staff — list active staff for dentist dropdown
 router.get('/staff', verifyToken, async (req, res) => {
     try {
