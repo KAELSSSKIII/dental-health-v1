@@ -666,9 +666,9 @@ function KioskCard() {
     const [token, setToken] = useState('');
     const [loading, setLoading] = useState(true);
     const [regenerating, setRegenerating] = useState(false);
-    const [copied, setCopied] = useState(false);
+    const [copied, setCopied] = useState('');
 
-    const kioskUrl = token ? `${window.location.origin}/kiosk/${token}` : '';
+    const kioskUrl = `${window.location.origin}/kiosk`;
 
     useEffect(() => {
         client.get('/settings/kiosk')
@@ -678,20 +678,26 @@ function KioskCard() {
     }, []);
 
     const regenerate = async () => {
-        if (!window.confirm('Regenerate the kiosk URL? The current link will stop working immediately.')) return;
+        if (!window.confirm('Regenerate the access token? The current token will stop working immediately and you will need to re-enter the new token on the kiosk device.')) return;
         setRegenerating(true);
         try {
             const res = await client.post('/settings/kiosk/regenerate');
             setToken(res.data.kiosk_token);
-            showToast('New kiosk URL generated', 'success');
+            showToast('New kiosk token generated', 'success');
         } catch { showToast('Failed to regenerate', 'error'); }
         finally { setRegenerating(false); }
     };
 
-    const copy = () => {
+    const copyUrl = () => {
         navigator.clipboard.writeText(kioskUrl);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setCopied('url');
+        setTimeout(() => setCopied(''), 2000);
+    };
+
+    const copyToken = () => {
+        navigator.clipboard.writeText(token);
+        setCopied('token');
+        setTimeout(() => setCopied(''), 2000);
     };
 
     if (loading) {
@@ -709,7 +715,7 @@ function KioskCard() {
                         <p className="font-semibold text-text-primary">Clinic iPad / Kiosk</p>
                         <p className="text-sm text-text-secondary mt-0.5">
                             A dedicated registration form for in-clinic use. No rate limiting — designed for a shared device at the front desk.
-                            Open this URL on the iPad and it will be ready for patients to fill in their details.
+                            Open the kiosk URL on the iPad, then enter the access token once to activate the device. Future visits will skip the setup screen.
                         </p>
                     </div>
                 </div>
@@ -718,22 +724,31 @@ function KioskCard() {
             <div className="card space-y-5">
                 <div className="flex items-center gap-2 mb-1">
                     <Link2 className="w-4 h-4 text-text-secondary" />
-                    <SectionTitle>Kiosk URL</SectionTitle>
+                    <SectionTitle>Kiosk Setup</SectionTitle>
                 </div>
-                <FieldGroup label="Current Link">
+                <FieldGroup label="Step 1 — Open this URL on the iPad">
                     <div className="flex gap-2">
                         <input className="form-input flex-1 font-mono text-xs bg-surface cursor-default select-all"
-                            value={kioskUrl || 'Generating…'} readOnly />
-                        <button type="button" className="btn-secondary shrink-0 gap-1.5" onClick={copy} disabled={!kioskUrl}>
-                            {copied ? <><Check className="w-4 h-4 text-green-600" />Copied</> : <><Copy className="w-4 h-4" />Copy</>}
+                            value={kioskUrl} readOnly />
+                        <button type="button" className="btn-secondary shrink-0 gap-1.5" onClick={copyUrl}>
+                            {copied === 'url' ? <><Check className="w-4 h-4 text-green-600" />Copied</> : <><Copy className="w-4 h-4" />Copy</>}
+                        </button>
+                    </div>
+                </FieldGroup>
+                <FieldGroup label="Step 2 — Enter this access token on the device">
+                    <div className="flex gap-2">
+                        <input className="form-input flex-1 font-mono text-sm bg-surface cursor-default select-all tracking-widest"
+                            value={token || 'Generating…'} readOnly />
+                        <button type="button" className="btn-secondary shrink-0 gap-1.5" onClick={copyToken} disabled={!token}>
+                            {copied === 'token' ? <><Check className="w-4 h-4 text-green-600" />Copied</> : <><Copy className="w-4 h-4" />Copy</>}
                         </button>
                     </div>
                     <p className="text-xs text-text-secondary mt-1">
-                        Bookmark this URL on the clinic iPad. The token in the URL acts as the password — keep it private.
+                        Keep this token private — it acts as the password for the kiosk device. The token is saved on the device after first entry.
                     </p>
                 </FieldGroup>
                 <div className="flex justify-between items-center pt-1">
-                    <p className="text-xs text-text-secondary">Regenerating creates a new URL and immediately invalidates the old one.</p>
+                    <p className="text-xs text-text-secondary">Regenerating invalidates the old token. You will need to re-enter the new token on the kiosk iPad.</p>
                     <button type="button" className="btn-secondary gap-1.5 shrink-0"
                         onClick={regenerate} disabled={regenerating}>
                         <RefreshCw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />

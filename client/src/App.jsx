@@ -24,7 +24,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/intake/:slug" element={<PatientIntake />} />
           <Route path="/appointment/:slug" element={<AppointmentForm />} />
-          <Route path="/kiosk/:token" element={<Kiosk />} />
+          <Route path="/kiosk" element={<Kiosk />} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />

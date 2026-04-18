@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     CheckCircle, MapPin, User, Shield, Briefcase, Camera,
-    Upload, RefreshCw, X, Ban, Tablet,
+    Upload, RefreshCw, X, KeyRound, Tablet, LogOut,
 } from 'lucide-react';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 const api = axios.create({ baseURL: API_BASE });
+
+const STORAGE_KEY = '_kiosk_token';
 
 const todayLocal = () => {
     const d = new Date();
@@ -60,9 +61,17 @@ const EMPTY = {
 };
 
 export default function Kiosk() {
-    const { token } = useParams();
-    const [pageState, setPageState] = useState('checking'); // checking | welcome | form | success | invalid
+    // pageState: checking | setup | welcome | form | success
+    const [pageState, setPageState] = useState('checking');
+    const [token, setToken] = useState('');
     const [clinicName, setClinicName] = useState('Our Clinic');
+
+    // Setup screen
+    const [tokenInput, setTokenInput] = useState('');
+    const [tokenError, setTokenError] = useState('');
+    const [tokenLoading, setTokenLoading] = useState(false);
+
+    // Form
     const [patientName, setPatientName] = useState('');
     const [wasUpdated, setWasUpdated] = useState(false);
     const [form, setForm] = useState(EMPTY);
@@ -77,15 +86,27 @@ export default function Kiosk() {
     const [cameraError, setCameraError] = useState('');
     const [profilePhoto, setProfilePhoto] = useState(null);
 
+    // On mount: check if a token is already saved, validate it
     useEffect(() => {
-        api.get(`/kiosk/validate/${token}`)
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+            setPageState('setup');
+            return;
+        }
+        api.get(`/kiosk/validate/${saved}`)
             .then(res => {
+                setToken(saved);
                 setClinicName(res.data.clinic_name || 'Our Clinic');
                 setPageState('welcome');
             })
-            .catch(() => setPageState('invalid'));
-    }, [token]);
+            .catch(() => {
+                // Saved token is no longer valid — clear it and ask for a new one
+                localStorage.removeItem(STORAGE_KEY);
+                setPageState('setup');
+            });
+    }, []);
 
+    // Success countdown
     useEffect(() => {
         if (pageState !== 'success') return;
         setCountdown(15);
@@ -97,6 +118,37 @@ export default function Kiosk() {
         }, 1000);
         return () => clearInterval(iv);
     }, [pageState]);
+
+    const handleTokenSubmit = async e => {
+        e.preventDefault();
+        const t = tokenInput.trim();
+        if (!t) { setTokenError('Please enter the access token.'); return; }
+        setTokenError('');
+        setTokenLoading(true);
+        try {
+            const res = await api.get(`/kiosk/validate/${t}`);
+            localStorage.setItem(STORAGE_KEY, t);
+            setToken(t);
+            setClinicName(res.data.clinic_name || 'Our Clinic');
+            setPageState('welcome');
+        } catch (err) {
+            if (err.response?.status === 404) {
+                setTokenError('Invalid token. Please check with clinic staff.');
+            } else {
+                setTokenError('Could not verify token. Check your connection and try again.');
+            }
+        } finally {
+            setTokenLoading(false);
+        }
+    };
+
+    const clearDevice = () => {
+        if (!window.confirm('Remove this device from kiosk mode? Staff will need to enter the token again.')) return;
+        localStorage.removeItem(STORAGE_KEY);
+        setToken('');
+        setTokenInput('');
+        setPageState('setup');
+    };
 
     const resetKiosk = () => {
         setForm({ ...EMPTY, record_date: todayLocal() });
@@ -191,11 +243,49 @@ export default function Kiosk() {
             setPageState('success');
             window.scrollTo({ top: 0 });
         } catch (err) {
-            alert(err.response?.data?.error || 'Something went wrong. Please try again.');
+            if (err.response?.status === 403) {
+                // Token was regenerated — force re-setup
+                localStorage.removeItem(STORAGE_KEY);
+                setToken('');
+                setPageState('setup');
+                setTokenError('The kiosk token has changed. Please enter the new token.');
+            } else {
+                alert(err.response?.data?.error || 'Something went wrong. Please try again.');
+            }
         } finally {
             setSaving(false);
         }
     };
+
+    // ── Shared header ─────────────────────────────────────────────────────────
+
+    const Header = () => (
+        <div
+            style={{ background: 'linear-gradient(135deg, #051f19 0%, #0a6352 60%, #0d8a6e 100%)' }}
+            className="px-4 py-5 text-white shadow-lg sticky top-0 z-10"
+        >
+            <div className="max-w-3xl mx-auto flex items-center gap-4">
+                <img src="/logo.png" alt="Clinic Logo" className="h-10 w-auto object-contain shrink-0" onError={e => { e.target.style.display = 'none'; }} />
+                <div>
+                    <p className="font-bold text-white text-base leading-tight">{clinicName || 'Clinic Kiosk'}</p>
+                    <p className="text-white/70 text-sm">Patient Registration Kiosk</p>
+                </div>
+                <div className="ml-auto flex items-center gap-3">
+                    {pageState !== 'setup' && pageState !== 'checking' && (
+                        <button
+                            type="button"
+                            onClick={clearDevice}
+                            title="Remove kiosk access from this device"
+                            className="p-1.5 rounded-lg text-white/50 hover:text-white/80 hover:bg-white/10 transition-colors"
+                        >
+                            <LogOut className="w-5 h-5" />
+                        </button>
+                    )}
+                    <Tablet className="w-6 h-6 text-white/50" />
+                </div>
+            </div>
+        </div>
+    );
 
     // ── Render ────────────────────────────────────────────────────────────────
 
@@ -207,15 +297,52 @@ export default function Kiosk() {
         );
     }
 
-    if (pageState === 'invalid') {
+    if (pageState === 'setup') {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-bg px-6">
-                <div className="text-center">
-                    <div className="w-24 h-24 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
-                        <Ban className="w-12 h-12 text-red-500" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-text-primary mb-2">Invalid Kiosk Link</h1>
-                    <p className="text-text-secondary text-lg">Please ask clinic staff for the correct kiosk URL.</p>
+            <div className="min-h-screen bg-bg">
+                <Header />
+                <div className="max-w-md mx-auto px-4 py-12">
+                    <motion.div
+                        initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
+                        className="card space-y-6"
+                    >
+                        <div className="text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                                <KeyRound className="w-8 h-8 text-primary" />
+                            </div>
+                            <h2 className="font-display text-2xl font-bold text-text-primary mb-1">Kiosk Setup</h2>
+                            <p className="text-sm text-text-secondary">
+                                Enter the access token provided by clinic staff to activate this device as a patient registration kiosk.
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleTokenSubmit} className="space-y-4">
+                            <div>
+                                <label className="form-label">Access Token</label>
+                                <input
+                                    className={`form-input text-center font-mono tracking-widest text-base ${tokenError ? 'border-red-400' : ''}`}
+                                    value={tokenInput}
+                                    onChange={e => { setTokenInput(e.target.value); setTokenError(''); }}
+                                    placeholder="Enter token here"
+                                    autoComplete="off"
+                                    spellCheck={false}
+                                    autoFocus
+                                />
+                                {tokenError && <p className="form-error mt-1">{tokenError}</p>}
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={tokenLoading}
+                                className="btn-primary w-full justify-center py-3 text-base"
+                            >
+                                {tokenLoading ? 'Verifying…' : 'Activate Kiosk'}
+                            </button>
+                        </form>
+
+                        <p className="text-xs text-text-secondary text-center">
+                            The token is saved on this device. You won't need to enter it again unless it's regenerated.
+                        </p>
+                    </motion.div>
                 </div>
             </div>
         );
@@ -223,22 +350,7 @@ export default function Kiosk() {
 
     return (
         <div className="min-h-screen bg-bg">
-            {/* Header — matches PatientIntake gradient */}
-            <div
-                style={{ background: 'linear-gradient(135deg, #051f19 0%, #0a6352 60%, #0d8a6e 100%)' }}
-                className="px-4 py-5 text-white shadow-lg sticky top-0 z-10"
-            >
-                <div className="max-w-3xl mx-auto flex items-center gap-4">
-                    <img src="/logo.png" alt="Clinic Logo" className="h-10 w-auto object-contain shrink-0" onError={e => { e.target.style.display = 'none'; }} />
-                    <div>
-                        <p className="font-bold text-white text-base leading-tight">{clinicName}</p>
-                        <p className="text-white/70 text-sm">Patient Registration Kiosk</p>
-                    </div>
-                    <div className="ml-auto">
-                        <Tablet className="w-6 h-6 text-white/50" />
-                    </div>
-                </div>
-            </div>
+            <Header />
 
             <div className="max-w-3xl mx-auto px-4 py-6">
                 <AnimatePresence mode="wait">
