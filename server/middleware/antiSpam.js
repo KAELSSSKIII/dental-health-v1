@@ -1,13 +1,13 @@
 'use strict';
 const rateLimit = require('express-rate-limit');
 
-// Rate limiter: 1 submission per IP per 15 minutes
+// Rate limiter: 1 submission per IP per 1 hour
 const publicFormLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
+    windowMs: 60 * 60 * 1000,
     max: 1,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'Too many submissions. Please wait 15 minutes and try again.' },
+    message: { error: 'Too many submissions. Please wait 1 hour and try again.' },
 });
 
 // ── In-memory stores ──────────────────────────────────────────────────────────
