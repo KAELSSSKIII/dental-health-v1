@@ -59,10 +59,10 @@ router.post('/:token', async (req, res) => {
             const patientId = dupCheck.rows[0].id;
             await pool.query(`
                 UPDATE patients SET
-                  phone         = CASE WHEN $1  IS NOT NULL THEN $1  ELSE phone         END,
-                  email         = CASE WHEN $2  IS NOT NULL THEN $2  ELSE email         END,
-                  address       = CASE WHEN $3  IS NOT NULL THEN $3  ELSE address       END,
-                  profile_photo = CASE WHEN $4  IS NOT NULL THEN $4  ELSE profile_photo END,
+                  phone         = COALESCE($1::text, phone),
+                  email         = COALESCE($2::text, email),
+                  address       = COALESCE($3::text, address),
+                  profile_photo = COALESCE($4::text, profile_photo),
                   updated_at    = NOW()
                 WHERE id = $5
             `, [
@@ -94,7 +94,7 @@ router.post('/:token', async (req, res) => {
         res.status(201).json({ updated: false, patientName: first_name });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: err.message || 'Server error' });
+        res.status(500).json({ error: 'Server error' });
     }
 });
 

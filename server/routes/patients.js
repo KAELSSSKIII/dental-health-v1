@@ -124,20 +124,20 @@ router.post('/intake', publicFormLimiter, checkHoneypot, checkTiming, checkDevic
             const patientId = dupCheck.rows[0].id;
             await pool.query(`
                 UPDATE patients SET
-                  phone                     = CASE WHEN $1  IS NOT NULL THEN $1  ELSE phone                     END,
-                  email                     = CASE WHEN $2  IS NOT NULL THEN $2  ELSE email                     END,
-                  address                   = CASE WHEN $3  IS NOT NULL THEN $3  ELSE address                   END,
-                  zip_code                  = CASE WHEN $4  IS NOT NULL THEN $4  ELSE zip_code                  END,
-                  business_phone            = CASE WHEN $5  IS NOT NULL THEN $5  ELSE business_phone            END,
-                  business_address          = CASE WHEN $6  IS NOT NULL THEN $6  ELSE business_address          END,
-                  insurance_provider        = CASE WHEN $7  IS NOT NULL THEN $7  ELSE insurance_provider        END,
-                  insurance_id              = CASE WHEN $8  IS NOT NULL THEN $8  ELSE insurance_id              END,
-                  preferred_appointment_time= CASE WHEN $9  IS NOT NULL THEN $9  ELSE preferred_appointment_time END,
-                  height                    = CASE WHEN $10 IS NOT NULL THEN $10 ELSE height                    END,
-                  weight                    = CASE WHEN $11 IS NOT NULL THEN $11 ELSE weight                    END,
-                  occupation                = CASE WHEN $12 IS NOT NULL THEN $12 ELSE occupation                END,
-                  profile_photo             = CASE WHEN $13 IS NOT NULL THEN $13 ELSE profile_photo             END,
-                  updated_at                = NOW()
+                  phone                      = COALESCE($1::text,  phone),
+                  email                      = COALESCE($2::text,  email),
+                  address                    = COALESCE($3::text,  address),
+                  zip_code                   = COALESCE($4::text,  zip_code),
+                  business_phone             = COALESCE($5::text,  business_phone),
+                  business_address           = COALESCE($6::text,  business_address),
+                  insurance_provider         = COALESCE($7::text,  insurance_provider),
+                  insurance_id               = COALESCE($8::text,  insurance_id),
+                  preferred_appointment_time = COALESCE($9::text,  preferred_appointment_time),
+                  height                     = COALESCE($10::text, height),
+                  weight                     = COALESCE($11::text, weight),
+                  occupation                 = COALESCE($12::text, occupation),
+                  profile_photo              = COALESCE($13::text, profile_photo),
+                  updated_at                 = NOW()
                 WHERE id = $14
             `, [
                 phone || null, email || null, address || null, zip_code || null,
