@@ -34,10 +34,10 @@ router.post('/:token', async (req, res) => {
         }
 
         const {
-            last_name, first_name, middle_name, date_of_birth, sex,
-            occupation, marital_status, spouse_name, address, zip_code,
-            phone, email, referred_by, insurance_provider, insurance_id,
-            record_date,
+            last_name, first_name, middle_name, date_of_birth, sex, height, weight,
+            occupation, marital_status, spouse_name, address, zip_code, phone,
+            business_address, business_phone, email, referred_by, preferred_appointment_time,
+            insurance_provider, insurance_id, notes, record_date, profile_photo,
         } = req.body;
 
         if (!last_name?.trim() || !first_name?.trim() || !date_of_birth) {
@@ -59,29 +59,36 @@ router.post('/:token', async (req, res) => {
             const patientId = dupCheck.rows[0].id;
             await pool.query(`
                 UPDATE patients SET
-                  phone   = CASE WHEN $1 IS NOT NULL THEN $1 ELSE phone   END,
-                  email   = CASE WHEN $2 IS NOT NULL THEN $2 ELSE email   END,
-                  address = CASE WHEN $3 IS NOT NULL THEN $3 ELSE address END,
-                  updated_at = NOW()
-                WHERE id = $4
-            `, [phone || null, email || null, address || null, patientId]);
+                  phone         = CASE WHEN $1  IS NOT NULL THEN $1  ELSE phone         END,
+                  email         = CASE WHEN $2  IS NOT NULL THEN $2  ELSE email         END,
+                  address       = CASE WHEN $3  IS NOT NULL THEN $3  ELSE address       END,
+                  profile_photo = CASE WHEN $4  IS NOT NULL THEN $4  ELSE profile_photo END,
+                  updated_at    = NOW()
+                WHERE id = $5
+            `, [
+                phone || null, email || null, address || null,
+                (profile_photo && profile_photo.startsWith('data:image/')) ? profile_photo : null,
+                patientId,
+            ]);
             return res.json({ updated: true, patientName: first_name });
         }
 
         await pool.query(`
             INSERT INTO patients (
-                last_name, first_name, middle_name, date_of_birth, sex,
-                occupation, marital_status, spouse_name, address, zip_code,
-                phone, email, referred_by, insurance_provider, insurance_id,
-                record_date, created_by
+                last_name, first_name, middle_name, date_of_birth, sex, height, weight,
+                occupation, marital_status, spouse_name, address, zip_code, phone,
+                business_address, business_phone, email, referred_by, preferred_appointment_time,
+                insurance_provider, insurance_id, notes, record_date, profile_photo, created_by
             ) VALUES (
-                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NULL
+                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,NULL
             )
         `, [
             last_name.trim(), first_name.trim(), middle_name || null, date_of_birth, sex || null,
-            occupation || null, marital_status || null, spouse_name || null, address || null, zip_code || null,
-            phone || null, email || null, referred_by || null, insurance_provider || null, insurance_id || null,
-            record_date || null,
+            height || null, weight || null, occupation || null, marital_status || null, spouse_name || null,
+            address || null, zip_code || null, phone || null, business_address || null, business_phone || null,
+            email || null, referred_by || null, preferred_appointment_time || null,
+            insurance_provider || null, insurance_id || null, notes || null, record_date || null,
+            (profile_photo && profile_photo.startsWith('data:image/')) ? profile_photo : null,
         ]);
 
         res.status(201).json({ updated: false, patientName: first_name });
