@@ -36,23 +36,29 @@ router.get('/stats', verifyToken, async (req, res) => {
             END AS period_end
         ),
         visit_revenue AS (
-          SELECT COALESCE(SUM(cost), 0) AS total
-          FROM visits, bounds
-          WHERE visit_date >= bounds.period_start
-            AND visit_date < bounds.period_end
-            AND payment_status IN ('paid', 'insurance', 'partial')
+          SELECT COALESCE(SUM(v.cost), 0) AS total
+          FROM visits v
+          JOIN patients p ON p.id = v.patient_id AND p.is_active = true
+          , bounds
+          WHERE v.visit_date >= bounds.period_start
+            AND v.visit_date < bounds.period_end
+            AND v.payment_status IN ('paid', 'insurance', 'partial')
         ),
         ortho_downpayments AS (
-          SELECT COALESCE(SUM(downpayment), 0) AS total
-          FROM orthodontic_cases, bounds
-          WHERE start_date >= bounds.period_start::date
-            AND start_date < bounds.period_end::date
+          SELECT COALESCE(SUM(oc.downpayment), 0) AS total
+          FROM orthodontic_cases oc
+          JOIN patients p ON p.id = oc.patient_id AND p.is_active = true
+          , bounds
+          WHERE oc.start_date >= bounds.period_start::date
+            AND oc.start_date < bounds.period_end::date
         ),
         ortho_adjustments AS (
-          SELECT COALESCE(SUM(amount_paid), 0) AS total
-          FROM orthodontic_adjustments, bounds
-          WHERE adjustment_date >= bounds.period_start::date
-            AND adjustment_date < bounds.period_end::date
+          SELECT COALESCE(SUM(oa.amount_paid), 0) AS total
+          FROM orthodontic_adjustments oa
+          JOIN patients p ON p.id = oa.patient_id AND p.is_active = true
+          , bounds
+          WHERE oa.adjustment_date >= bounds.period_start::date
+            AND oa.adjustment_date < bounds.period_end::date
         )
         SELECT
           visit_revenue.total
