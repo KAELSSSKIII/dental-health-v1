@@ -10,10 +10,10 @@ import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../utils/helpers';
 import { useToast } from '../components/Toast';
 
-const TABS = [
+const ALL_TABS = [
     { key: 'account', label: 'Account', icon: User },
     { key: 'clinic', label: 'Clinic Info', icon: Building2 },
-    { key: 'users', label: 'Users', icon: Users },
+    { key: 'users', label: 'Users', icon: Users, adminOnly: true },
     { key: 'forms', label: 'Forms', icon: ClipboardList },
 ];
 
@@ -195,22 +195,16 @@ function ClinicTab() {
     const [fetching, setFetching] = useState(true);
 
     useEffect(() => {
-        (async () => {
-            try {
-                const res = await client.get('/settings/clinic');
-                setForm({
-                    clinic_name: res.data.clinic_name || '',
-                    address: res.data.address || '',
-                    phone: res.data.phone || '',
-                    email: res.data.email || '',
-                    website: res.data.website || '',
-                });
-            } catch {
-                showToast('Failed to load clinic info', 'error');
-            } finally {
-                setFetching(false);
-            }
-        })();
+        client.get('/settings/clinic')
+            .then(res => setForm({
+                clinic_name: res.data.clinic_name || '',
+                address: res.data.address || '',
+                phone: res.data.phone || '',
+                email: res.data.email || '',
+                website: res.data.website || '',
+            }))
+            .catch(() => showToast('Failed to load clinic info', 'error'))
+            .finally(() => setFetching(false));
     }, []);
 
     const handleSubmit = async (e) => {
@@ -426,17 +420,12 @@ function UsersTab() {
     const [modal, setModal] = useState(null); // null | 'add' | user object
 
     useEffect(() => {
-        (async () => {
-            try {
-                const res = await client.get('/settings/users');
-                setUsers(res.data);
-            } catch {
-                showToast('Failed to load users', 'error');
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, []);
+        if (!isAdmin) { setLoading(false); return; }
+        client.get('/settings/users')
+            .then(res => setUsers(res.data))
+            .catch(() => showToast('Failed to load users', 'error'))
+            .finally(() => setLoading(false));
+    }, [isAdmin]);
 
     const handleSaved = (saved, type) => {
         if (type === 'create') {
@@ -857,6 +846,9 @@ function FormsTab() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Settings() {
+    const { admin } = useAuth();
+    const isAdmin = admin?.role === 'admin';
+    const TABS = ALL_TABS.filter(t => !t.adminOnly || isAdmin);
     const [activeTab, setActiveTab] = useState('account');
 
     return (
