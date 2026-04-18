@@ -272,20 +272,20 @@ function AppointmentForm({ initial, staff, onSave, onClose }) {
                         onChange={set('time')}
                         disabled={loadingSlots}
                     >
-                        {loadingSlots && <option>Loading…</option>}
-                        {!loadingSlots && (() => {
-                            const slots = TIME_SLOTS.includes(form.time)
+                        {loadingSlots
+                            ? <option>Loading…</option>
+                            : (TIME_SLOTS.includes(form.time)
                                 ? TIME_SLOTS
-                                : [...TIME_SLOTS, form.time].sort();
-                            return slots.map(slot => {
+                                : [...TIME_SLOTS, form.time].sort()
+                              ).map(slot => {
                                 const taken = isSlotTaken(slot);
                                 return (
                                     <option key={slot} value={slot} disabled={taken}>
                                         {formatSlotLabel(slot)}{taken ? ' — Taken' : ''}
                                     </option>
                                 );
-                            });
-                        })()}
+                              })
+                        }
                     </select>
                     {errors.time && <p className="form-error">{errors.time}</p>}
                 </div>
