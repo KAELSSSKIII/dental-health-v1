@@ -387,6 +387,47 @@ router.post('/appt-form/regenerate', async (req, res) => {
     }
 });
 
+// ─── Clinic Kiosk ─────────────────────────────────────────────────────────────
+
+// GET /api/settings/kiosk (admin-only)
+router.get('/kiosk', requireAdmin, async (req, res) => {
+    try {
+        let result = await pool.query('SELECT id, kiosk_token FROM clinic_settings LIMIT 1');
+        if (result.rows.length === 0) {
+            result = await pool.query(
+                `INSERT INTO clinic_settings (clinic_name) VALUES ('Dental Clinic') RETURNING id, kiosk_token`
+            );
+        }
+        const row = result.rows[0];
+        if (!row.kiosk_token) {
+            const token = generateSlug() + generateSlug() + generateSlug();
+            await pool.query('UPDATE clinic_settings SET kiosk_token = $1 WHERE id = $2', [token, row.id]);
+            return res.json({ kiosk_token: token });
+        }
+        res.json({ kiosk_token: row.kiosk_token });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// POST /api/settings/kiosk/regenerate (admin-only)
+router.post('/kiosk/regenerate', requireAdmin, async (req, res) => {
+    const token = generateSlug() + generateSlug() + generateSlug();
+    try {
+        const existing = await pool.query('SELECT id FROM clinic_settings LIMIT 1');
+        if (existing.rows.length === 0) {
+            await pool.query(`INSERT INTO clinic_settings (clinic_name, kiosk_token) VALUES ('Dental Clinic', $1)`, [token]);
+        } else {
+            await pool.query('UPDATE clinic_settings SET kiosk_token = $1, updated_at = NOW() WHERE id = $2', [token, existing.rows[0].id]);
+        }
+        res.json({ kiosk_token: token });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // POST /api/settings/intake/regenerate
 router.post('/intake/regenerate', async (req, res) => {
     const slug = generateSlug();

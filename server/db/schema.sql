@@ -284,3 +284,8 @@ CREATE TABLE IF NOT EXISTS intake_submissions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_intake_submissions_patient ON intake_submissions(patient_id);
+
+-- ============================================
+-- CLINIC KIOSK
+-- ============================================
+ALTER TABLE clinic_settings ADD COLUMN IF NOT EXISTS kiosk_token VARCHAR(64);

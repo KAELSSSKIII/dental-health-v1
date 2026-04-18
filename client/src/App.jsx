@@ -10,6 +10,7 @@ import PatientDetail from './pages/PatientDetail';
 import PatientNew from './pages/PatientNew';
 import PatientIntake from './pages/PatientIntake';
 import AppointmentForm from './pages/AppointmentForm';
+import Kiosk from './pages/Kiosk';
 import Appointments from './pages/Appointments';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/intake/:slug" element={<PatientIntake />} />
           <Route path="/appointment/:slug" element={<AppointmentForm />} />
+          <Route path="/kiosk/:token" element={<Kiosk />} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />

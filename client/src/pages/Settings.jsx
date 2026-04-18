@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     User, Building2, Users, Eye, EyeOff, Plus, Pencil,
     ToggleLeft, ToggleRight, X, Save, KeyRound, ShieldCheck,
-    ClipboardList, Copy, Check, RefreshCw, Link2,
+    ClipboardList, Copy, Check, RefreshCw, Link2, Tablet,
 } from 'lucide-react';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -659,8 +659,96 @@ function FormSettingsCard({
 
 // ─── Forms Tab ────────────────────────────────────────────────────────────────
 
+// ─── Kiosk Tab ────────────────────────────────────────────────────────────────
+
+function KioskCard() {
+    const { showToast } = useToast();
+    const [token, setToken] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [regenerating, setRegenerating] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const kioskUrl = token ? `${window.location.origin}/kiosk/${token}` : '';
+
+    useEffect(() => {
+        client.get('/settings/kiosk')
+            .then(res => setToken(res.data.kiosk_token || ''))
+            .catch(() => showToast('Failed to load kiosk settings', 'error'))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const regenerate = async () => {
+        if (!window.confirm('Regenerate the kiosk URL? The current link will stop working immediately.')) return;
+        setRegenerating(true);
+        try {
+            const res = await client.post('/settings/kiosk/regenerate');
+            setToken(res.data.kiosk_token);
+            showToast('New kiosk URL generated', 'success');
+        } catch { showToast('Failed to regenerate', 'error'); }
+        finally { setRegenerating(false); }
+    };
+
+    const copy = () => {
+        navigator.clipboard.writeText(kioskUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    if (loading) {
+        return <div className="card space-y-4">{[1, 2].map(i => <div key={i} className="skeleton h-10 rounded" />)}</div>;
+    }
+
+    return (
+        <div className="space-y-5">
+            <div className="card">
+                <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <Tablet className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                        <p className="font-semibold text-text-primary">Clinic iPad / Kiosk</p>
+                        <p className="text-sm text-text-secondary mt-0.5">
+                            A dedicated registration form for in-clinic use. No rate limiting — designed for a shared device at the front desk.
+                            Open this URL on the iPad and it will be ready for patients to fill in their details.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="card space-y-5">
+                <div className="flex items-center gap-2 mb-1">
+                    <Link2 className="w-4 h-4 text-text-secondary" />
+                    <SectionTitle>Kiosk URL</SectionTitle>
+                </div>
+                <FieldGroup label="Current Link">
+                    <div className="flex gap-2">
+                        <input className="form-input flex-1 font-mono text-xs bg-surface cursor-default select-all"
+                            value={kioskUrl || 'Generating…'} readOnly />
+                        <button type="button" className="btn-secondary shrink-0 gap-1.5" onClick={copy} disabled={!kioskUrl}>
+                            {copied ? <><Check className="w-4 h-4 text-green-600" />Copied</> : <><Copy className="w-4 h-4" />Copy</>}
+                        </button>
+                    </div>
+                    <p className="text-xs text-text-secondary mt-1">
+                        Bookmark this URL on the clinic iPad. The token in the URL acts as the password — keep it private.
+                    </p>
+                </FieldGroup>
+                <div className="flex justify-between items-center pt-1">
+                    <p className="text-xs text-text-secondary">Regenerating creates a new URL and immediately invalidates the old one.</p>
+                    <button type="button" className="btn-secondary gap-1.5 shrink-0"
+                        onClick={regenerate} disabled={regenerating}>
+                        <RefreshCw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
+                        {regenerating ? 'Regenerating…' : 'Regenerate'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function FormsTab() {
     const { showToast } = useToast();
+    const { admin } = useAuth();
+    const isAdmin = admin?.role === 'admin';
     const [activeForm, setActiveForm] = useState('intake');
 
     // ── Intake form state ──────────────────────────────────────────────────────
@@ -786,6 +874,7 @@ function FormsTab() {
                 {[
                     { key: 'intake', label: 'New Patient Form' },
                     { key: 'appointment', label: 'Appointment Request Form' },
+                    ...(isAdmin ? [{ key: 'kiosk', label: 'Clinic Kiosk' }] : []),
                 ].map(tab => (
                     <button key={tab.key} type="button"
                         onClick={() => setActiveForm(tab.key)}
@@ -838,6 +927,8 @@ function FormsTab() {
                     onCopy={copyAppt}
                 />
             )}
+
+            {activeForm === 'kiosk' && isAdmin && <KioskCard />}
         </div>
     );
 }

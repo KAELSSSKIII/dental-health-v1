@@ -38,6 +38,7 @@ const photosRoutes = require('./routes/photos');
 const appointmentsRoutes = require('./routes/appointments');
 const intakeRoutes = require('./routes/intake');
 const appointmentFormRoutes = require('./routes/appointmentForm');
+const kioskRoutes = require('./routes/kiosk');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
@@ -54,6 +55,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/intake', intakeRoutes);
 app.use('/api/appointment-form', appointmentFormRoutes);
+app.use('/api/kiosk', kioskRoutes);
 
 // ─── Health check ─────────────────────────────────
 app.get('/api/health', (req, res) => res.json({ status: 'ok', version: '1.0.0' }));
