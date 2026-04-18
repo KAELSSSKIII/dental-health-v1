@@ -3,7 +3,7 @@ const { body, validationResult } = require('express-validator');
 const router = express.Router();
 const pool = require('../db/pool');
 const { verifyToken } = require('../middleware/auth');
-const { publicFormLimiter, checkHoneypot, checkTiming, checkDuplicateCooldown } = require('../middleware/antiSpam');
+const { publicFormLimiter, checkHoneypot, checkTiming, checkDuplicateCooldown, checkDeviceId } = require('../middleware/antiSpam');
 
 // GET /api/patients - paginated + search
 router.get('/', verifyToken, async (req, res) => {
@@ -92,7 +92,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 
 // POST /api/patients/intake - public, no auth required
-router.post('/intake', publicFormLimiter, checkHoneypot, checkTiming, checkDuplicateCooldown, [
+router.post('/intake', publicFormLimiter, checkHoneypot, checkTiming, checkDeviceId, checkDuplicateCooldown, [
     body('last_name').trim().notEmpty().withMessage('Last name is required'),
     body('first_name').trim().notEmpty().withMessage('First name is required'),
     body('date_of_birth').isDate().withMessage('Valid date of birth is required'),

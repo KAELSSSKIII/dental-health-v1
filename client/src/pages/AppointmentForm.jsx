@@ -8,6 +8,19 @@ import { VISIT_TYPES } from '../utils/constants';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 const api = axios.create({ baseURL: API_BASE });
 
+function getDeviceId() {
+    try {
+        let id = localStorage.getItem('_did');
+        if (!id) {
+            id = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+            localStorage.setItem('_did', id);
+        }
+        return id;
+    } catch {
+        return '';
+    }
+}
+
 const Field = ({ label, required, error, children }) => (
     <div>
         <label className="form-label">
@@ -110,6 +123,7 @@ export default function AppointmentForm() {
             const res = await api.post(`/appointment-form/${slug}`, {
                 ...form,
                 _t: Date.now() - formStartTime,
+                _did: getDeviceId(),
                 fax: '',
             });
             setPatientName(res.data.patientName || form.first_name);

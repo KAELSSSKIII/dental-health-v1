@@ -10,6 +10,19 @@ import axios from 'axios';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 const api = axios.create({ baseURL: API_BASE });
 
+function getDeviceId() {
+    try {
+        let id = localStorage.getItem('_did');
+        if (!id) {
+            id = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+            localStorage.setItem('_did', id);
+        }
+        return id;
+    } catch {
+        return '';
+    }
+}
+
 const todayLocal = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -202,6 +215,7 @@ export default function PatientIntake() {
                 ...form,
                 profile_photo: profilePhoto,
                 _t: Date.now() - formStartTime,
+                _did: getDeviceId(),
                 fax: '',
             });
             setPatientName(res.data.patientName || form.first_name);

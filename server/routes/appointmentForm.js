@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
-const { publicFormLimiter, checkHoneypot, checkTiming, checkDuplicateCooldown } = require('../middleware/antiSpam');
+const { publicFormLimiter, checkHoneypot, checkTiming, checkDuplicateCooldown, checkDeviceId } = require('../middleware/antiSpam');
 
 async function getFormSettings(slug) {
     const result = await pool.query(
@@ -29,7 +29,7 @@ router.get('/status/:slug', async (req, res) => {
 });
 
 // POST /api/appointment-form/:slug — public: submit appointment request
-router.post('/:slug', publicFormLimiter, checkHoneypot, checkTiming, checkDuplicateCooldown, async (req, res) => {
+router.post('/:slug', publicFormLimiter, checkHoneypot, checkTiming, checkDeviceId, checkDuplicateCooldown, async (req, res) => {
     try {
         const settings = await getFormSettings(req.params.slug);
         if (!settings) return res.status(404).json({ error: 'Form not found' });

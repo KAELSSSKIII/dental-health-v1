@@ -10,17 +10,31 @@ const publicFormLimiter = rateLimit({
     message: { error: 'Too many submissions. Please wait 15 minutes and try again.' },
 });
 
-// In-memory cooldown: same identity blocked for 60 minutes after a successful submission
+// ── In-memory stores ──────────────────────────────────────────────────────────
+
+// name+DOB+IP cooldown: same identity blocked 60 min after success
 const recentSubmissions = new Map();
 const COOLDOWN_MS = 60 * 60 * 1000;
 
-// Prune stale entries every 10 minutes to prevent memory growth
+// device fingerprint: max 5 submissions per device per hour
+const deviceSubmissions = new Map();
+const DEVICE_LIMIT = 5;
+const DEVICE_WINDOW_MS = 60 * 60 * 1000;
+
+// Prune stale entries periodically to prevent memory growth
 setInterval(() => {
     const now = Date.now();
     for (const [key, ts] of recentSubmissions) {
         if (now - ts > COOLDOWN_MS) recentSubmissions.delete(key);
     }
-}, 10 * 60 * 1000);
+    for (const [key, times] of deviceSubmissions) {
+        const fresh = times.filter(t => now - t < DEVICE_WINDOW_MS);
+        if (fresh.length === 0) deviceSubmissions.delete(key);
+        else deviceSubmissions.set(key, fresh);
+    }
+}, 15 * 60 * 1000);
+
+// ── Middleware ────────────────────────────────────────────────────────────────
 
 // Reject if the hidden fax field is filled — bots do this, humans never see it
 function checkHoneypot(req, res, next) {
@@ -61,4 +75,25 @@ function checkDuplicateCooldown(req, res, next) {
     next();
 }
 
-module.exports = { publicFormLimiter, checkHoneypot, checkTiming, checkDuplicateCooldown };
+// Block a device that has submitted more than DEVICE_LIMIT times in the past hour.
+// The device ID is a UUID generated and stored in the browser's localStorage —
+// it persists across page loads and survives name/DOB changes.
+function checkDeviceId(req, res, next) {
+    const did = (req.body._did || '').toString().slice(0, 128).trim();
+    if (!did) return next(); // no device ID sent — IP limiter is the backstop
+
+    const now = Date.now();
+    const times = (deviceSubmissions.get(did) || []).filter(t => now - t < DEVICE_WINDOW_MS);
+
+    if (times.length >= DEVICE_LIMIT) {
+        return res.status(429).json({
+            error: 'Too many submissions from this device. Please wait before trying again.',
+        });
+    }
+
+    times.push(now);
+    deviceSubmissions.set(did, times);
+    next();
+}
+
+module.exports = { publicFormLimiter, checkHoneypot, checkTiming, checkDuplicateCooldown, checkDeviceId };
