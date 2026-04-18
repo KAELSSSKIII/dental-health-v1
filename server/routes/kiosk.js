@@ -94,7 +94,7 @@ router.post('/:token', async (req, res) => {
         res.status(201).json({ updated: false, patientName: first_name });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: err.message || 'Server error' });
     }
 });
 
