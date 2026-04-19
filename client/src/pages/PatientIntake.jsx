@@ -301,7 +301,7 @@ export default function PatientIntake() {
                                 ? <p className="text-sm text-text-secondary">Redirecting you shortly…</p>
                                 : <div className={`inline-flex items-center gap-2 font-semibold text-sm px-5 py-3 rounded-xl
                                                   ${wasUpdated ? 'bg-blue-50 text-blue-700' : 'bg-primary/10 text-primary'}`}>
-                                    Please hand the device back to our staff.
+                                   
                                 </div>
                             }
                             <p className="text-xs text-text-secondary mt-8">
