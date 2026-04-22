@@ -142,10 +142,12 @@ export default function PatientNew() {
                         <input type="date" className="form-input" value={form.record_date} onChange={set('record_date')} />
                     </Field>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <Field label="Height"><input className="form-input" value={form.height} onChange={set('height')} placeholder="170 cm" /></Field>
                     <Field label="Weight"><input className="form-input" value={form.weight} onChange={set('weight')} placeholder="65 kg" /></Field>
-                    <Field label="Occupation" ><input className="form-input sm:col-span-2" value={form.occupation} onChange={set('occupation')} placeholder="Engineer" /></Field>
+                    <div className="sm:col-span-2">
+                        <Field label="Occupation"><input className="form-input" value={form.occupation} onChange={set('occupation')} placeholder="Engineer" /></Field>
+                    </div>
                 </div>
                 <div>
                     <label className="form-label">Marital Status</label>
@@ -202,9 +204,9 @@ export default function PatientNew() {
                 </Field>
             </Section>
 
-            <div className="flex justify-end gap-3">
-                <Link to="/patients" className="btn-secondary">Cancel</Link>
-                <button type="submit" className="btn-primary" disabled={saving}>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                <Link to="/patients" className="btn-secondary w-full sm:w-auto">Cancel</Link>
+                <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
                     {saving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Patient</>}
                 </button>
             </div>

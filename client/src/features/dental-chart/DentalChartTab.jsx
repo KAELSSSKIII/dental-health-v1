@@ -149,17 +149,17 @@ export default function DentalChartTab({ patient }) {
             {/* Chart container */}
             <div className="card">
                 {/* Header row */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <div>
                         <h2 className="font-semibold text-text-primary">Interactive Dental Chart</h2>
                         <p className="text-xs text-text-secondary">Click any tooth to update its status</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button className="btn-ghost text-xs" onClick={fetchChart} disabled={loading}>
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </button>
                         <button
-                            className={`btn-primary text-sm ${!hasChanges ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`btn-primary text-sm flex-1 sm:flex-none ${!hasChanges ? 'opacity-50 cursor-not-allowed' : ''}`}
                             onClick={handleSave}
                             disabled={!hasChanges || saving}
                         >
@@ -248,14 +248,14 @@ export default function DentalChartTab({ patient }) {
 
             {/* Extra / Supernumerary Teeth */}
             <div className="card space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                         <h3 className="font-semibold text-text-primary">Extra / Supernumerary Teeth</h3>
                         <p className="text-xs text-text-secondary mt-0.5">
                             {extraTeeth.length === 0 ? 'No extra teeth recorded' : `${extraTeeth.length} extra tooth${extraTeeth.length !== 1 ? 'teeth' : ''} recorded`}
                         </p>
                     </div>
-                    <button className="btn-primary text-sm" onClick={() => { setExtraLabel(''); setAddExtraOpen(true); }}>
+                    <button className="btn-primary text-sm w-full sm:w-auto" onClick={() => { setExtraLabel(''); setAddExtraOpen(true); }}>
                         <Plus className="w-4 h-4" /> Add Extra Tooth
                     </button>
                 </div>
@@ -330,7 +330,7 @@ export default function DentalChartTab({ patient }) {
                                     autoFocus
                                 />
                             </div>
-                            <div className="flex gap-3">
+                            <div className="flex flex-col-reverse sm:flex-row gap-3">
                                 <button className="btn-ghost flex-1" onClick={() => setAddExtraOpen(false)}>Cancel</button>
                                 <button
                                     className="btn-primary flex-1"

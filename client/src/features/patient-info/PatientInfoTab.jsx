@@ -154,12 +154,14 @@ export default function PatientInfoTab({ patient, onSave }) {
                         </Field>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <Field label="Height"><Input value={form.height} onChange={set('height')} placeholder="170 cm" /></Field>
                         <Field label="Weight"><Input value={form.weight} onChange={set('weight')} placeholder="65 kg" /></Field>
-                        <Field label="Occupation" className="sm:col-span-2">
-                            <Input value={form.occupation} onChange={set('occupation')} placeholder="Engineer" />
-                        </Field>
+                        <div className="sm:col-span-2">
+                            <Field label="Occupation">
+                                <Input value={form.occupation} onChange={set('occupation')} placeholder="Engineer" />
+                            </Field>
+                        </div>
                     </div>
 
                     <div>
@@ -234,11 +236,11 @@ export default function PatientInfoTab({ patient, onSave }) {
                 <p className="text-xs text-text-secondary">
                     {savedAt ? `Last saved ${timeSince(savedAt)}` : 'Unsaved changes'}
                 </p>
-                <div className="flex items-center gap-3">
-                    <button type="button" className="btn-secondary" onClick={() => printPatientRecord(form, patient)}>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                    <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => printPatientRecord(form, patient)}>
                         Print Record
                     </button>
-                    <button type="submit" className="btn-primary" disabled={saving}>
+                    <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
                         {saving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Record</>}
                     </button>
                 </div>

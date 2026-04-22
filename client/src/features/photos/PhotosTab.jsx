@@ -187,18 +187,18 @@ export default function PhotosTab({ patient }) {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h2 className="text-lg font-semibold text-text-primary">Patient Photos</h2>
                     <p className="text-sm text-text-secondary mt-0.5">
                         {photos.length} photo{photos.length !== 1 ? 's' : ''} on record
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button className="btn-secondary" onClick={() => fileInputRef.current?.click()}>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                    <button className="btn-secondary w-full sm:w-auto" onClick={() => fileInputRef.current?.click()}>
                         <Upload className="w-4 h-4" /> Upload File
                     </button>
-                    <button className="btn-primary" onClick={openCamera}>
+                    <button className="btn-primary w-full sm:w-auto" onClick={openCamera}>
                         <Camera className="w-4 h-4" /> Take Photo
                     </button>
                     <input
@@ -329,9 +329,9 @@ export default function PhotosTab({ patient }) {
                                 className="w-full max-h-56 object-contain rounded-xl bg-surface border border-border"
                             />
                             <div>
-                                <label className="label">Photo Type</label>
+                                <label className="form-label">Photo Type</label>
                                 <select
-                                    className="input"
+                                    className="form-select"
                                     value={form.photo_type}
                                     onChange={(e) => setForm((f) => ({ ...f, photo_type: e.target.value }))}
                                 >
@@ -341,25 +341,25 @@ export default function PhotosTab({ patient }) {
                                 </select>
                             </div>
                             <div>
-                                <label className="label">Label <span className="text-text-secondary font-normal">(optional)</span></label>
+                                <label className="form-label">Label <span className="text-text-secondary font-normal">(optional)</span></label>
                                 <input
-                                    className="input"
+                                    className="form-input"
                                     placeholder="e.g. Front view, Month 3…"
                                     value={form.label}
                                     onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
                                 />
                             </div>
                             <div>
-                                <label className="label">Notes <span className="text-text-secondary font-normal">(optional)</span></label>
+                                <label className="form-label">Notes <span className="text-text-secondary font-normal">(optional)</span></label>
                                 <textarea
-                                    className="input resize-none"
+                                    className="form-textarea"
                                     rows={2}
                                     placeholder="Any notes about this photo…"
                                     value={form.notes}
                                     onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                                 />
                             </div>
-                            <div className="flex gap-3 pt-1">
+                            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
                                 <button
                                     className="btn-ghost flex-1"
                                     onClick={() => { setSaveFormOpen(false); setCapturedImage(null); }}

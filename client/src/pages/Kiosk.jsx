@@ -264,11 +264,11 @@ export default function Kiosk() {
             style={{ background: 'linear-gradient(135deg, #051f19 0%, #0a6352 60%, #0d8a6e 100%)' }}
             className="px-4 py-5 text-white shadow-lg sticky top-0 z-10"
         >
-            <div className="max-w-3xl mx-auto flex items-center gap-4">
+            <div className="max-w-3xl mx-auto flex items-center gap-3 sm:gap-4 min-w-0">
                 <img src="/logo.png" alt="Clinic Logo" className="h-10 w-auto object-contain shrink-0" onError={e => { e.target.style.display = 'none'; }} />
-                <div>
+                <div className="min-w-0">
                     <p className="font-bold text-white text-base leading-tight">{clinicName || 'Clinic Kiosk'}</p>
-                    <p className="text-white/70 text-sm">Patient Registration Kiosk</p>
+                    <p className="text-white/70 text-sm truncate">Patient Registration Kiosk</p>
                 </div>
                 <div className="ml-auto flex items-center gap-3">
                     {pageState !== 'setup' && pageState !== 'checking' && (
@@ -440,14 +440,14 @@ export default function Kiosk() {
                                             </select>
                                         </Field>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                                         <Field label="Height">
                                             <input className="form-input" value={form.height} onChange={set('height')} placeholder="170 cm" />
                                         </Field>
                                         <Field label="Weight">
                                             <input className="form-input" value={form.weight} onChange={set('weight')} placeholder="65 kg" />
                                         </Field>
-                                        <div className="col-span-2">
+                                        <div className="sm:col-span-2">
                                             <Field label="Occupation">
                                                 <input className="form-input" value={form.occupation} onChange={set('occupation')} placeholder="Engineer" autoCapitalize="words" />
                                             </Field>
@@ -562,11 +562,11 @@ export default function Kiosk() {
                                         <p className="text-sm text-text-secondary text-center">
                                             Please take a clear photo of your face for your patient record.
                                         </p>
-                                        <div className="flex gap-3">
-                                            <button type="button" className="btn-primary" onClick={openCamera}>
+                                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                                            <button type="button" className="btn-primary w-full sm:w-auto" onClick={openCamera}>
                                                 <Camera className="w-4 h-4" /> Open Camera
                                             </button>
-                                            <button type="button" className="btn-secondary" onClick={() => fileInputRef.current?.click()}>
+                                            <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => fileInputRef.current?.click()}>
                                                 <Upload className="w-4 h-4" /> Upload Photo
                                             </button>
                                         </div>
@@ -580,7 +580,7 @@ export default function Kiosk() {
                                 <p className="text-xs text-text-secondary mb-4">
                                     By submitting this form, you authorize {clinicName} to use this information for your dental treatment and care.
                                 </p>
-                                <div className="flex gap-3">
+                                <div className="flex flex-col-reverse sm:flex-row gap-3">
                                     <button type="button" onClick={resetKiosk} className="btn-ghost flex-1 justify-center py-3">
                                         Cancel
                                     </button>

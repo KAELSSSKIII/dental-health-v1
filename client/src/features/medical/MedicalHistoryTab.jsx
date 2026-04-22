@@ -203,7 +203,7 @@ export default function MedicalHistoryTab({ patient }) {
                 <p className="text-xs text-text-secondary">
                     {lastUpdated ? `Last updated ${formatDate(lastUpdated)}` : 'Not yet saved'}
                 </p>
-                <button type="submit" className="btn-primary" disabled={saving}>
+                <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
                     {saving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Medical History</>}
                 </button>
             </div>

@@ -107,7 +107,7 @@ export default function PatientDetail() {
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                        <h1 className="font-display text-2xl font-bold text-text-primary">{formatName(patient)}</h1>
+                        <h1 className="font-display text-2xl font-bold text-text-primary break-words">{formatName(patient)}</h1>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-text-secondary">
                             <span>{calcAge(patient.date_of_birth)} years old</span>
                             {patient.sex && <span className="capitalize">• {patient.sex}</span>}
@@ -133,21 +133,21 @@ export default function PatientDetail() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 shrink-0 w-full sm:w-auto">
                         <Link
                             to={`/appointments?patientId=${patient.id}`}
-                            className="btn-primary"
+                            className="btn-primary w-full sm:w-auto"
                         >
                             <Calendar className="w-4 h-4" /> Book Appointment
                         </Link>
                         <button
-                            className="btn-secondary"
+                            className="btn-secondary w-full sm:w-auto"
                             onClick={() => setTab('info')}
                         >
                             <Pencil className="w-4 h-4" /> Edit
                         </button>
                         <button
-                            className="btn-danger"
+                            className="btn-danger w-full sm:w-auto"
                             onClick={() => setDeleteOpen(true)}
                         >
                             <Trash2 className="w-4 h-4" /> Delete
@@ -158,7 +158,7 @@ export default function PatientDetail() {
 
             {/* Tabs */}
             <div className="border-b border-border -mx-0">
-                <div className="flex overflow-x-auto">
+                <div className="flex overflow-x-auto pb-1">
                     {TABS.map(t => (
                         <button
                             key={t.id}
@@ -245,7 +245,7 @@ export default function PatientDetail() {
                     </div>
 
                     {/* Image */}
-                    <div className="overflow-hidden flex items-center justify-center w-full h-full p-16" onClick={e => e.stopPropagation()}>
+                    <div className="overflow-hidden flex items-center justify-center w-full h-full p-4 sm:p-16" onClick={e => e.stopPropagation()}>
                         <motion.img
                             src={patient.profile_photo}
                             alt={formatName(patient)}

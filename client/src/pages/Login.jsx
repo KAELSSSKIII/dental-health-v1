@@ -32,7 +32,7 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex">
+        <div className="min-h-dvh flex">
             {/* Left panel */}
             <motion.div
                 className="hidden lg:flex lg:w-1/2 xl:w-5/12 relative overflow-hidden"
@@ -89,7 +89,7 @@ export default function Login() {
 
             {/* Right panel */}
             <motion.div
-                className="flex-1 flex items-center justify-center bg-white p-8"
+                className="flex-1 flex items-center justify-center bg-white p-4 sm:p-8"
                 initial={{ opacity: 0, x: 40 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6 }}

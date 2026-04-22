@@ -105,7 +105,7 @@ export default function Dashboard() {
             </div>
 
             {/* Stat cards */}
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <StatCard index={0} icon={Users} label="Total Patients" value={stats?.totalPatients} color="bg-teal-50 text-teal-600" />
                 <StatCard index={1} icon={Calendar} label="Today's Appointments" value={stats?.appointmentsToday} color="bg-blue-50 text-blue-600" />
                 <StatCard index={2} icon={Clock} label="Upcoming Appointments" value={stats?.upcomingAppointments} color="bg-amber-50 text-amber-600" />
@@ -125,7 +125,7 @@ export default function Dashboard() {
                         <Link to="/patients" className="text-primary text-sm font-medium hover:underline">View all →</Link>
                     </div>
                     <div className="overflow-x-auto -mx-2">
-                        <table className="w-full text-sm">
+                        <table className="w-full min-w-[680px] text-sm">
                             <thead>
                                 <tr className="border-b border-border">
                                     {['Name', 'Age', 'Last Visit', 'Issues', ''].map(h => (

@@ -53,7 +53,7 @@ function VisitForm({ patientId, visit, onSave, onClose }) {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label className="form-label">Visit Date</label>
                     <input type="date" className="form-input" value={form.visit_date} onChange={set('visit_date')} />
@@ -77,7 +77,7 @@ function VisitForm({ patientId, visit, onSave, onClose }) {
                 <label className="form-label">Treatment Performed *</label>
                 <textarea className="form-textarea" rows={3} placeholder="Describe the treatment performed..." value={form.treatment_performed} onChange={set('treatment_performed')} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label className="form-label">Teeth Treated</label>
                     <input className="form-input" placeholder="e.g. #14, #15" value={form.teeth_treated} onChange={set('teeth_treated')} />
@@ -87,7 +87,7 @@ function VisitForm({ patientId, visit, onSave, onClose }) {
                     <input className="form-input" placeholder="Medications prescribed" value={form.prescriptions} onChange={set('prescriptions')} />
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label className="form-label">Cost (PHP)</label>
                     <input type="number" className="form-input" placeholder="0.00" value={form.cost} onChange={set('cost')} />
@@ -107,9 +107,9 @@ function VisitForm({ patientId, visit, onSave, onClose }) {
                 <label className="form-label">Notes</label>
                 <textarea className="form-textarea" rows={2} placeholder="Additional notes..." value={form.notes} onChange={set('notes')} />
             </div>
-            <div className="flex justify-end gap-3 pt-2">
-                <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={saving}>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                <button type="button" className="btn-secondary w-full sm:w-auto" onClick={onClose}>Cancel</button>
+                <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
                     {saving ? 'Saving...' : (visit ? 'Update Visit' : 'Add Visit')}
                 </button>
             </div>
@@ -186,16 +186,16 @@ export default function VisitsTab({ patient }) {
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                     <h2 className="font-semibold text-text-primary">Visit History</h2>
                     <p className="text-xs text-text-secondary">{visits.length} visit{visits.length !== 1 ? 's' : ''} recorded</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                     <button className="btn-ghost text-xs" onClick={fetchVisits} disabled={loading}>
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     </button>
-                    <button className="btn-primary text-sm" onClick={openAdd}>
+                    <button className="btn-primary text-sm flex-1 sm:flex-none" onClick={openAdd}>
                         <Plus className="w-4 h-4" /> Add Visit
                     </button>
                 </div>
@@ -226,7 +226,7 @@ export default function VisitsTab({ patient }) {
                                 transition={{ delay: i * 0.04 }}
                                 className="card"
                             >
-                                <div className="flex items-start justify-between gap-3">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex flex-wrap items-center gap-2 mb-2">
                                             <span className={`badge text-xs ${VISIT_TYPE_COLORS[v.visit_type] || 'badge-gray'}`}>
@@ -254,7 +254,7 @@ export default function VisitsTab({ patient }) {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1 shrink-0">
+                                    <div className="flex items-center justify-end gap-1 shrink-0">
                                         {/* Print dropdown */}
                                         <div className="relative">
                                             <button

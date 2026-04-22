@@ -154,9 +154,9 @@ export default function AppointmentForm() {
                 style={{ background: 'linear-gradient(135deg, #051f19 0%, #0a6352 60%, #0d8a6e 100%)' }}
                 className="px-4 py-5 text-white shadow-lg sticky top-0 z-10"
             >
-                <div className="max-w-2xl mx-auto flex items-center gap-4">
+                <div className="max-w-2xl mx-auto flex items-center gap-3 sm:gap-4 min-w-0">
                     <img src="/logo.png" alt="Clinic Logo" className="h-10 w-auto object-contain shrink-0" />
-                    <p className="text-white/70 text-sm">Appointment Request Form</p>
+                    <p className="text-white/70 text-sm truncate">Appointment Request Form</p>
                 </div>
             </div>
 

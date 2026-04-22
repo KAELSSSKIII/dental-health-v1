@@ -320,12 +320,12 @@ function UserModal({ user, onClose, onSaved }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
+                className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-md max-h-[92dvh] overflow-y-auto p-4 sm:p-6"
             >
                 <div className="flex items-center justify-between mb-5">
                     <h2 className="font-semibold text-lg text-text-primary">
@@ -396,7 +396,7 @@ function UserModal({ user, onClose, onSaved }) {
                             ))}
                         </select>
                     </FieldGroup>
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
                         <button type="button" onClick={onClose} className="btn-ghost flex-1">Cancel</button>
                         <button type="submit" disabled={loading} className="btn-primary flex-1">
                             {loading ? 'Saving…' : (isEdit ? 'Save Changes' : 'Add Staff')}
@@ -457,21 +457,21 @@ function UsersTab() {
     return (
         <>
             <div className="card p-0 overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 border-b border-border">
+                    <div className="flex items-center gap-2 min-w-0">
                         <ShieldCheck className="w-4 h-4 text-text-secondary" />
                         <span className="font-semibold text-text-primary">Staff Members</span>
                         <span className="text-text-secondary text-sm">({users.length})</span>
                     </div>
                     {isAdmin && (
-                        <button onClick={() => setModal('add')} className="btn-primary text-sm">
+                        <button onClick={() => setModal('add')} className="btn-primary text-sm w-full sm:w-auto">
                             <Plus className="w-4 h-4" /> Add Staff
                         </button>
                     )}
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full min-w-[720px] text-sm">
                         <thead className="bg-bg/80 border-b border-border">
                             <tr>
                                 {['Name', 'Username', 'Role', 'Status', 'Last Login', ...(isAdmin ? ['Actions'] : [])].map(h => (
@@ -579,8 +579,8 @@ function FormSettingsCard({
         <form onSubmit={onSave} className="space-y-5">
             {/* Enable toggle */}
             <div className="card">
-                <div className="flex items-center justify-between gap-4">
-                    <div>
+                <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
                         <p className="font-semibold text-text-primary">{title}</p>
                         <p className="text-sm text-text-secondary mt-0.5">
                             {enabled
@@ -603,10 +603,10 @@ function FormSettingsCard({
                     <SectionTitle>Form URL</SectionTitle>
                 </div>
                 <FieldGroup label="Current Link">
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <input className="form-input flex-1 font-mono text-xs bg-surface cursor-default select-all"
                             value={formUrl || 'Save a slug below to generate the URL'} readOnly />
-                        <button type="button" className="btn-secondary shrink-0 gap-1.5" onClick={onCopy} disabled={!formUrl}>
+                        <button type="button" className="btn-secondary shrink-0 gap-1.5 w-full sm:w-auto" onClick={onCopy} disabled={!formUrl}>
                             {copied ? <><Check className="w-4 h-4 text-green-600" />Copied</> : <><Copy className="w-4 h-4" />Copy</>}
                         </button>
                     </div>
@@ -615,17 +615,17 @@ function FormSettingsCard({
                     </p>
                 </FieldGroup>
                 <FieldGroup label="URL Slug">
-                    <div className="flex gap-2">
-                        <div className="flex flex-1 items-stretch">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex flex-1 items-stretch min-w-0">
                             <span className="px-3 py-2 bg-surface border border-border border-r-0 rounded-l-xl text-sm text-text-secondary whitespace-nowrap">
                                 /{formPath}/
                             </span>
-                            <input className="form-input rounded-l-none flex-1 font-mono"
+                            <input className="form-input rounded-l-none flex-1 min-w-0 font-mono"
                                 value={slug}
                                 onChange={e => onSlugChange(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
                                 placeholder="abc123xyz" minLength={3} maxLength={50} required />
                         </div>
-                        <button type="button" className="btn-secondary shrink-0 gap-1.5"
+                        <button type="button" className="btn-secondary shrink-0 gap-1.5 w-full sm:w-auto"
                             onClick={onRegenerate} disabled={regenerating} title="Generate a new random slug">
                             <RefreshCw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
                             {regenerating ? '' : 'Regenerate'}
@@ -651,7 +651,9 @@ function FormSettingsCard({
             </div>
 
             <div className="flex justify-end">
-                <SaveButton loading={saving} />
+                <div className="w-full sm:w-auto">
+                    <SaveButton loading={saving} />
+                </div>
             </div>
         </form>
     );
@@ -727,19 +729,19 @@ function KioskCard() {
                     <SectionTitle>Kiosk Setup</SectionTitle>
                 </div>
                 <FieldGroup label="Step 1 — Open this URL on the iPad">
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <input className="form-input flex-1 font-mono text-xs bg-surface cursor-default select-all"
                             value={kioskUrl} readOnly />
-                        <button type="button" className="btn-secondary shrink-0 gap-1.5" onClick={copyUrl}>
+                        <button type="button" className="btn-secondary shrink-0 gap-1.5 w-full sm:w-auto" onClick={copyUrl}>
                             {copied === 'url' ? <><Check className="w-4 h-4 text-green-600" />Copied</> : <><Copy className="w-4 h-4" />Copy</>}
                         </button>
                     </div>
                 </FieldGroup>
                 <FieldGroup label="Step 2 — Enter this access token on the device">
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <input className="form-input flex-1 font-mono text-sm bg-surface cursor-default select-all tracking-widest"
                             value={token || 'Generating…'} readOnly />
-                        <button type="button" className="btn-secondary shrink-0 gap-1.5" onClick={copyToken} disabled={!token}>
+                        <button type="button" className="btn-secondary shrink-0 gap-1.5 w-full sm:w-auto" onClick={copyToken} disabled={!token}>
                             {copied === 'token' ? <><Check className="w-4 h-4 text-green-600" />Copied</> : <><Copy className="w-4 h-4" />Copy</>}
                         </button>
                     </div>
@@ -747,9 +749,9 @@ function KioskCard() {
                         Keep this token private — it acts as the password for the kiosk device. The token is saved on the device after first entry.
                     </p>
                 </FieldGroup>
-                <div className="flex justify-between items-center pt-1">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-1">
                     <p className="text-xs text-text-secondary">Regenerating invalidates the old token. You will need to re-enter the new token on the kiosk iPad.</p>
-                    <button type="button" className="btn-secondary gap-1.5 shrink-0"
+                    <button type="button" className="btn-secondary gap-1.5 shrink-0 w-full sm:w-auto"
                         onClick={regenerate} disabled={regenerating}>
                         <RefreshCw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
                         {regenerating ? 'Regenerating…' : 'Regenerate'}
@@ -885,7 +887,7 @@ function FormsTab() {
     return (
         <div className="space-y-6">
             {/* Sub-tab switcher */}
-            <div className="flex gap-1 bg-bg border border-border rounded-xl p-1 w-fit">
+            <div className="flex gap-1 bg-bg border border-border rounded-xl p-1 w-full max-w-full overflow-x-auto sm:w-fit">
                 {[
                     { key: 'intake', label: 'New Patient Form' },
                     { key: 'appointment', label: 'Appointment Request Form' },
@@ -893,7 +895,7 @@ function FormsTab() {
                 ].map(tab => (
                     <button key={tab.key} type="button"
                         onClick={() => setActiveForm(tab.key)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                             activeForm === tab.key
                                 ? 'bg-white text-text-primary shadow-sm'
                                 : 'text-text-secondary hover:text-text-primary'
@@ -965,12 +967,12 @@ export default function Settings() {
             </div>
 
             {/* Tab bar */}
-            <div className="flex gap-1 bg-bg border border-border rounded-xl p-1 w-fit">
+            <div className="flex gap-1 bg-bg border border-border rounded-xl p-1 w-full max-w-full overflow-x-auto sm:w-fit">
                 {TABS.map(tab => (
                     <button
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                             activeTab === tab.key
                                 ? 'bg-white text-text-primary shadow-sm'
                                 : 'text-text-secondary hover:text-text-primary'

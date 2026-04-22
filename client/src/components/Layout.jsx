@@ -37,7 +37,7 @@ function NotificationDropdown({ onClose }) {
 
     return (
         <div ref={ref}
-            className="absolute right-0 top-full mt-2 w-80 bg-white border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+            className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-sm bg-white border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface">
                 <p className="font-semibold text-text-primary text-sm">Notifications</p>
@@ -148,7 +148,7 @@ export default function Layout() {
     const handleBellClose = useCallback(() => setBellOpen(false), []);
 
     return (
-        <div className="flex h-screen overflow-hidden bg-bg">
+        <div className="flex h-dvh min-h-screen overflow-hidden bg-bg">
             {/* Desktop sidebar */}
             <div className="hidden lg:flex lg:w-64 lg:shrink-0">
                 <Sidebar open={true} onClose={() => { }} />
@@ -162,8 +162,8 @@ export default function Layout() {
             {/* Main content */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Top bar */}
-                <header className="h-16 bg-white border-b border-border flex items-center justify-between px-4 lg:px-6 shrink-0 shadow-sm">
-                    <div className="flex items-center gap-4">
+                <header className="h-16 bg-white border-b border-border flex items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 shrink-0 shadow-sm">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                         <button className="lg:hidden btn-icon" onClick={() => setSidebarOpen(true)}>
                             <Menu className="w-5 h-5" />
                         </button>
@@ -202,7 +202,7 @@ export default function Layout() {
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 lg:p-6">
                     <Outlet />
                 </main>
             </div>

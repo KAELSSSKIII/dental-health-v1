@@ -257,7 +257,7 @@ function AppointmentForm({ initial, staff, onSave, onClose }) {
             </div>
 
             {/* Date + Time */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label className="form-label">Date <span className="text-red-500">*</span></label>
                     <input type="date" className={`form-input ${errors.date ? 'border-red-400' : ''}`}
@@ -292,7 +292,7 @@ function AppointmentForm({ initial, staff, onSave, onClose }) {
             </div>
 
             {/* Duration + Type */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label className="form-label">Duration</label>
                     <select className="form-select" value={form.duration_minutes} onChange={set('duration_minutes')}>
@@ -342,9 +342,9 @@ function AppointmentForm({ initial, staff, onSave, onClose }) {
                     placeholder="Any special instructions or concerns…" />
             </div>
 
-            <div className="flex justify-end gap-2 pt-1">
-                <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={saving}>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+                <button type="button" className="btn-secondary w-full sm:w-auto" onClick={onClose}>Cancel</button>
+                <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
                     {saving ? 'Saving…' : initial?.id ? 'Update Appointment' : 'Book Appointment'}
                 </button>
             </div>
@@ -374,7 +374,7 @@ function ApptDetail({ appt, onEdit, onDelete, onClose }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div>
                     <p className="text-text-secondary text-xs font-medium mb-0.5">Date & Time</p>
                     <p className="text-text-primary font-medium">
@@ -413,14 +413,14 @@ function ApptDetail({ appt, onEdit, onDelete, onClose }) {
                 </div>
             )}
 
-            <div className="flex justify-between pt-1">
-                <button className="btn-ghost text-red-500 hover:bg-red-50 hover:text-red-600 text-sm"
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-1">
+                <button className="btn-ghost text-red-500 hover:bg-red-50 hover:text-red-600 text-sm w-full sm:w-auto"
                     onClick={onDelete}>
                     <Trash2 className="w-4 h-4" /> Delete
                 </button>
-                <div className="flex gap-2">
-                    <button className="btn-secondary text-sm" onClick={onClose}>Close</button>
-                    <button className="btn-primary text-sm" onClick={onEdit}>
+                <div className="flex flex-col-reverse sm:flex-row gap-2">
+                    <button className="btn-secondary text-sm w-full sm:w-auto" onClick={onClose}>Close</button>
+                    <button className="btn-primary text-sm w-full sm:w-auto" onClick={onEdit}>
                         <Pencil className="w-4 h-4" /> Edit
                     </button>
                 </div>
@@ -569,68 +569,72 @@ export default function Appointments() {
 
             {/* Calendar */}
             <div className="card p-0 overflow-hidden">
-                {/* Day headers */}
-                <div className="grid border-b border-border bg-surface" style={{ gridTemplateColumns: '52px repeat(6, 1fr)' }}>
-                    <div className="py-2" />
-                    {weekDays.map((day, i) => (
-                        <div key={i}
-                            className={`py-2 px-1 text-center border-l border-border
-                                        ${isToday(day) ? 'bg-primary/5' : ''}`}>
-                            <p className={`text-xs font-semibold uppercase tracking-wide
-                                          ${isToday(day) ? 'text-primary' : 'text-text-secondary'}`}>
-                                {format(day, 'EEE')}
-                            </p>
-                            <p className={`text-lg font-bold mt-0.5
-                                          ${isToday(day) ? 'text-primary' : 'text-text-primary'}`}>
-                                {format(day, 'd')}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Time grid */}
-                {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <LoadingSpinner />
-                    </div>
-                ) : (
-                    <div className="overflow-y-auto" style={{ maxHeight: '70vh' }}>
-                        <div className="grid" style={{ gridTemplateColumns: '52px repeat(6, 1fr)', height: gridHeight }}>
-                            {/* Time labels column */}
-                            <div className="relative border-r border-border/50">
-                                {HOURS.map(h => (
-                                    <div key={h} className="absolute w-full flex items-start justify-end pr-1.5"
-                                        style={{ top: (h - START_HOUR) * HOUR_HEIGHT - 8, height: HOUR_HEIGHT }}>
-                                        <span className="text-[10px] text-text-secondary font-medium">
-                                            {h === 12 ? '12pm' : h > 12 ? `${h - 12}pm` : `${h}am`}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Day columns */}
-                            {weekDays.map((day, di) => (
-                                <div key={di}
-                                    className={`relative border-l border-border/50
-                                                ${isToday(day) ? 'bg-primary/[0.02]' : ''}`}
-                                    style={{ height: gridHeight }}>
-                                    {/* Hour slot lines + click zones */}
-                                    {HOURS.map(h => (
-                                        <div key={h}
-                                            className="absolute w-full border-t border-border/40 hover:bg-primary/5 cursor-pointer transition-colors"
-                                            style={{ top: (h - START_HOUR) * HOUR_HEIGHT, height: HOUR_HEIGHT }}
-                                            onClick={() => handleSlotClick(day, h)}
-                                        />
-                                    ))}
-                                    {/* Appointments */}
-                                    {dayAppointments(day).map(appt => (
-                                        <ApptCard key={appt.id} appt={appt} onClick={handleApptClick} />
-                                    ))}
+                <div className="overflow-x-auto">
+                    <div className="min-w-[760px]">
+                        {/* Day headers */}
+                        <div className="grid border-b border-border bg-surface" style={{ gridTemplateColumns: '52px repeat(6, 1fr)' }}>
+                            <div className="py-2" />
+                            {weekDays.map((day, i) => (
+                                <div key={i}
+                                    className={`py-2 px-1 text-center border-l border-border
+                                                ${isToday(day) ? 'bg-primary/5' : ''}`}>
+                                    <p className={`text-xs font-semibold uppercase tracking-wide
+                                                  ${isToday(day) ? 'text-primary' : 'text-text-secondary'}`}>
+                                        {format(day, 'EEE')}
+                                    </p>
+                                    <p className={`text-lg font-bold mt-0.5
+                                                  ${isToday(day) ? 'text-primary' : 'text-text-primary'}`}>
+                                        {format(day, 'd')}
+                                    </p>
                                 </div>
                             ))}
                         </div>
+
+                        {/* Time grid */}
+                        {loading ? (
+                            <div className="flex items-center justify-center py-20">
+                                <LoadingSpinner />
+                            </div>
+                        ) : (
+                            <div className="overflow-y-auto" style={{ maxHeight: '70vh' }}>
+                                <div className="grid" style={{ gridTemplateColumns: '52px repeat(6, 1fr)', height: gridHeight }}>
+                                    {/* Time labels column */}
+                                    <div className="relative border-r border-border/50">
+                                        {HOURS.map(h => (
+                                            <div key={h} className="absolute w-full flex items-start justify-end pr-1.5"
+                                                style={{ top: (h - START_HOUR) * HOUR_HEIGHT - 8, height: HOUR_HEIGHT }}>
+                                                <span className="text-[10px] text-text-secondary font-medium">
+                                                    {h === 12 ? '12pm' : h > 12 ? `${h - 12}pm` : `${h}am`}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Day columns */}
+                                    {weekDays.map((day, di) => (
+                                        <div key={di}
+                                            className={`relative border-l border-border/50
+                                                        ${isToday(day) ? 'bg-primary/[0.02]' : ''}`}
+                                            style={{ height: gridHeight }}>
+                                            {/* Hour slot lines + click zones */}
+                                            {HOURS.map(h => (
+                                                <div key={h}
+                                                    className="absolute w-full border-t border-border/40 hover:bg-primary/5 cursor-pointer transition-colors"
+                                                    style={{ top: (h - START_HOUR) * HOUR_HEIGHT, height: HOUR_HEIGHT }}
+                                                    onClick={() => handleSlotClick(day, h)}
+                                                />
+                                            ))}
+                                            {/* Appointments */}
+                                            {dayAppointments(day).map(appt => (
+                                                <ApptCard key={appt.id} appt={appt} onClick={handleApptClick} />
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Legend */}

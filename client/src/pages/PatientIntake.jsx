@@ -244,9 +244,9 @@ export default function PatientIntake() {
                 style={{ background: 'linear-gradient(135deg, #051f19 0%, #0a6352 60%, #0d8a6e 100%)' }}
                 className="px-4 py-5 text-white shadow-lg sticky top-0 z-10"
             >
-                <div className="max-w-3xl mx-auto flex items-center gap-4">
+                <div className="max-w-3xl mx-auto flex items-center gap-3 sm:gap-4 min-w-0">
                     <img src="/logo.png" alt="Clinic Logo" className="h-10 w-auto object-contain shrink-0" />
-                    <p className="text-white/70 text-sm">New Patient Registration Form</p>
+                    <p className="text-white/70 text-sm truncate">New Patient Registration Form</p>
                 </div>
             </div>
 
@@ -362,14 +362,14 @@ export default function PatientIntake() {
                                             </select>
                                         </Field>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                                         <Field label="Height">
                                             <input className="form-input" value={form.height} onChange={set('height')} placeholder="170 cm" />
                                         </Field>
                                         <Field label="Weight">
                                             <input className="form-input" value={form.weight} onChange={set('weight')} placeholder="65 kg" />
                                         </Field>
-                                        <div className="col-span-2">
+                                        <div className="sm:col-span-2">
                                             <Field label="Occupation">
                                                 <input className="form-input" value={form.occupation} onChange={set('occupation')} placeholder="Engineer" />
                                             </Field>
@@ -484,11 +484,11 @@ export default function PatientIntake() {
                                         <p className="text-sm text-text-secondary text-center">
                                             Please take a clear photo of your face for your patient record.
                                         </p>
-                                        <div className="flex gap-3">
-                                            <button type="button" className="btn-primary" onClick={openCamera}>
+                                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                                            <button type="button" className="btn-primary w-full sm:w-auto" onClick={openCamera}>
                                                 <Camera className="w-4 h-4" /> Open Camera
                                             </button>
-                                            <button type="button" className="btn-secondary" onClick={() => fileInputRef.current?.click()}>
+                                            <button type="button" className="btn-secondary w-full sm:w-auto" onClick={() => fileInputRef.current?.click()}>
                                                 <Upload className="w-4 h-4" /> Upload Photo
                                             </button>
                                         </div>

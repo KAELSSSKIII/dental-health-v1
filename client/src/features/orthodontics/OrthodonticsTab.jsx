@@ -50,7 +50,7 @@ function CaseModal({ patientId, orthoCase, onSave, onClose }) {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label className="form-label">Bracket Type</label>
                     <select className="form-select" value={form.bracket_type} onChange={set('bracket_type')}>
@@ -64,7 +64,7 @@ function CaseModal({ patientId, orthoCase, onSave, onClose }) {
                     </select>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label className="form-label">Start Date</label>
                     <input type="date" className="form-input" value={form.start_date} onChange={set('start_date')} />
@@ -80,7 +80,7 @@ function CaseModal({ patientId, orthoCase, onSave, onClose }) {
                     <input type="date" className="form-input" value={form.actual_end_date} onChange={set('actual_end_date')} />
                 </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label className="form-label">Total Treatment Cost (PHP)</label>
                     <input type="number" className="form-input" placeholder="0.00" value={form.total_cost} onChange={set('total_cost')} />
@@ -94,9 +94,9 @@ function CaseModal({ patientId, orthoCase, onSave, onClose }) {
                 <label className="form-label">Notes</label>
                 <textarea className="form-textarea" rows={2} value={form.notes} onChange={set('notes')} placeholder="Treatment notes..." />
             </div>
-            <div className="flex justify-end gap-3 pt-2">
-                <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={saving}>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                <button type="button" className="btn-secondary w-full sm:w-auto" onClick={onClose}>Cancel</button>
+                <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
                     {saving ? 'Saving...' : (orthoCase ? 'Update Case' : 'Start Case')}
                 </button>
             </div>
@@ -154,9 +154,9 @@ function PaymentModal({ patientId, orthoCase, onSave, onClose }) {
                     Remaining after this update: {formatCurrency(Math.max(0, (orthoCase.total_cost || 0) - (parseFloat(totalPaid) || 0)))}
                 </p>
             </div>
-            <div className="flex justify-end gap-3 pt-2">
-                <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={saving}>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                <button type="button" className="btn-secondary w-full sm:w-auto" onClick={onClose}>Cancel</button>
+                <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
                     {saving ? 'Saving...' : 'Update Payment'}
                 </button>
             </div>
@@ -202,7 +202,7 @@ function AdjustmentModal({ patientId, caseId, adjustment, orthoCase, onSave, onC
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label className="form-label">Adjustment Date</label>
                     <input type="date" className="form-input" value={form.adjustment_date} onChange={set('adjustment_date')} />
@@ -250,9 +250,9 @@ function AdjustmentModal({ patientId, caseId, adjustment, orthoCase, onSave, onC
                 </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
-                <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={saving}>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                <button type="button" className="btn-secondary w-full sm:w-auto" onClick={onClose}>Cancel</button>
+                <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saving}>
                     {saving ? 'Saving...' : (adjustment ? 'Update' : 'Record Adjustment')}
                 </button>
             </div>
@@ -338,7 +338,7 @@ export default function OrthodonticsTab({ patient }) {
                             {statusObj && <span className={`badge ${statusObj.class}`}>{statusObj.label}</span>}
                             {bracketObj && <span className="badge-gray text-xs">{bracketObj.label}</span>}
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-2 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-2 text-sm">
                             <div>
                                 <p className="text-xs text-text-secondary uppercase tracking-wide">Start Date</p>
                                 <p className="font-medium text-text-primary">{orthoCase.start_date ? formatDate(orthoCase.start_date) : '—'}</p>
@@ -356,7 +356,7 @@ export default function OrthodonticsTab({ patient }) {
                         </div>
                         {orthoCase.notes && <p className="text-sm text-text-secondary mt-3 italic">"{orthoCase.notes}"</p>}
                     </div>
-                    <button className="btn-secondary shrink-0" onClick={() => setCaseModal(true)}>
+                    <button className="btn-secondary shrink-0 w-full sm:w-auto" onClick={() => setCaseModal(true)}>
                         <Pencil className="w-4 h-4" /> Edit Case
                     </button>
                 </div>
@@ -364,16 +364,16 @@ export default function OrthodonticsTab({ patient }) {
 
             {/* ── Payment Summary ── */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="card">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <h3 className="font-semibold text-text-primary flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-primary" /> Payment Summary
                     </h3>
-                    <button className="btn-secondary text-sm" onClick={() => setPaymentModal(true)}>
+                    <button className="btn-secondary text-sm w-full sm:w-auto" onClick={() => setPaymentModal(true)}>
                         Update Payment
                     </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
                     {[
                         { label: 'Total Cost', value: formatCurrency(totalCost), color: 'text-text-primary' },
                         { label: 'Downpayment', value: formatCurrency(orthoCase.downpayment), color: 'text-primary' },
@@ -412,7 +412,7 @@ export default function OrthodonticsTab({ patient }) {
                     </h3>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
+                        <table className="w-full min-w-[620px] text-sm">
                             <thead>
                                 <tr className="border-b border-border">
                                     <th className="text-left text-xs text-text-secondary font-medium pb-2 pr-4">#</th>
@@ -497,16 +497,16 @@ export default function OrthodonticsTab({ patient }) {
 
             {/* ── Adjustments ── */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                     <div>
                         <h3 className="font-semibold text-text-primary">Adjustment Records</h3>
                         <p className="text-xs text-text-secondary">{adjustments.length} adjustment{adjustments.length !== 1 ? 's' : ''} recorded</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full sm:w-auto">
                         <button className="btn-ghost text-xs" onClick={fetchData}>
                             <RefreshCw className="w-4 h-4" />
                         </button>
-                        <button className="btn-primary text-sm" onClick={() => setAdjModal('new')}>
+                        <button className="btn-primary text-sm flex-1 sm:flex-none" onClick={() => setAdjModal('new')}>
                             <Plus className="w-4 h-4" /> Add Adjustment
                         </button>
                     </div>
@@ -531,7 +531,7 @@ export default function OrthodonticsTab({ patient }) {
                                 initial={{ opacity: 0, y: 6 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.04 }}
-                                className="card flex items-start justify-between gap-3"
+                                className="card flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3"
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -557,7 +557,7 @@ export default function OrthodonticsTab({ patient }) {
                                         <p className="text-xs text-text-secondary mt-1">By: {adj.performed_by_name}</p>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-1 shrink-0">
+                                <div className="flex items-center justify-end gap-1 shrink-0">
                                     <button className="btn-icon" onClick={() => setAdjModal(adj)}>
                                         <Pencil className="w-4 h-4" />
                                     </button>
